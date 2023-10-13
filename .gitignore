@@ -21,3 +21,6 @@ slprj/
 
 # Ignore MATLAB Simulink state files
 *.states
+
+.DS_Store
+```
