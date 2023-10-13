@@ -1,0 +1,23 @@
+# Ignore MATLAB autosave files
+*.asv
+
+# Ignore MATLAB backup files
+*.bak
+
+# Ignore MATLAB binary files
+*.mat
+
+# Ignore MATLAB MEX files
+*.mex*
+
+# Ignore MATLAB P-code files
+*.p
+
+# Ignore MATLAB Simulink cache files
+slprj/
+
+# Ignore MATLAB Simulink model files
+*.slx
+
+# Ignore MATLAB Simulink state files
+*.states
