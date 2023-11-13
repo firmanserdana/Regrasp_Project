@@ -1,10 +1,12 @@
 # FILEPATH: /home/firep1/Documents/gitworks/phd/ReWire/Rewire_Project/Regrasp_2nd/main.py
 
 import matlab.engine
-import communication
+#import communication
 
 # Connect to Grapevine
-
+eng = matlab.engine.start_matlab()
+eng.cd(r'Regrasp_2nd')
+eng.stimseq_matlab(nargout=0)
 # Connect to Sessantaquattro+
 
 # Set up input channel for Sessantaquattro+
