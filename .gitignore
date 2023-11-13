@@ -29,4 +29,6 @@ Regrasp_2nd/__pycache__/
 # Ignore depedency from third party
 Regrasp_2nd/pyns/
 
-Regrasp_2nd/xippmex/
+Regrasp_2nd/Xippmex/
+
+Regrasp_2nd/Xipppy/
