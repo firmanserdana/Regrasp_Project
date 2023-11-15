@@ -18,6 +18,9 @@ emg_data = inputs.read_inputs(ip_address, port)  # example data
 # Convert numpy array to MATLAB array
 emg_data_matlab = matlab.double(emg_data.tolist())
 
+# Stimulation process
+eng.controlStimulation(nargout=0)
+
 # Create a figure and axis for the live plot
 fig, ax = plt.subplots(2, 1, figsize=(12, 6))
 lines_input, = ax[0].plot([], [], label='Input EMG Data')
