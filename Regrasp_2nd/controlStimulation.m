@@ -4,11 +4,27 @@ function controlStimulation(env, env_thr, forceRange_mV, cs, stimChans)
     stimFreqMax = 100;
     trainFreqRng = stimFreqMax - stimFreqMin;
     pulseAmp = 100;
+    stimStepSize = 0.1;
     pulseAmpSteps = floor(pulseAmp / stimStepSize);
 
     % Stimulation parameters
+    phaseDur_us = 200;
+    nipClock_us = 25;
+    fs_us = 100;
+    msec2nip_clk = 1000 / nipClock_us;
     pw_cycls = floor(phaseDur_us / nipClock_us);
     fs_cycls = floor(fs_us / nipClock_us);
+
+    nipClock_us    = 1e6/3e4;           % 33.333 us
+nipClock_ms    = nipClock_us * 1e3; % 0.0333 ms
+msec2nip_clk   = 30;
+nip_clk2sec    = 1/3e4;
+nip_clk2msec   = nip_clk2sec * 1e3;
+nip_clk2usec   = nip_clk2sec * 1e6;
+AMP_NEURAL     = 0;              % used to set the input channel amp to measure neural voltages
+AMP_STIM       = 1;              % used to set the input channel amp to measure stim voltage
+stimAmp2V      = 0.50863e-3;     % capisici se ti serve e se va bene questo valore!! forse servono le lookup tables nel sito di ripple
+stimAmp2uV     = stimAmp2V * 1e6;
 
     % Loop through stimulation channels
     for i = 1:length(stimChans)
@@ -47,9 +63,9 @@ function controlStimulation(env, env_thr, forceRange_mV, cs, stimChans)
     end
 
     % Enable stimulation on the NIP
-    xippmex('stim', 'enable', 0); pause(0.5)
-    xippmex('stim', 'enable', 1); pause(0.5)
+    %xippmex('stim', 'enable', 0); pause(0.5)
+    %xippmex('stim', 'enable', 1); pause(0.5)
 
     % Send stimulation sequence
-    xippmex('stimseq', cmd);
+    %xippmex('stimseq', cmd);
 end

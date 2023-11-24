@@ -3,11 +3,12 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import communication
-import xsensdeviceapi as xsens
+# import xsensdeviceapi as xsens
 
 # ... (rest of your imports and class definitions)
 
-def read_inputs(ip_address, port):
+def read_inputs(ip_address, port, number_of_channels,
+    sample_frequency):
     # Create a socket which is used to connect to Sessantaquattro
     sq_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sq_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
