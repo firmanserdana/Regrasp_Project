@@ -1,14 +1,19 @@
-wclear all
+clear all
 close all
 clc
 
 
-%% Load data
+%% Load data change subject (sub1-7) and matrixmetal (MXene/agcl) depending on which data you want to look at.
 root = "/home/firep1/Documents/gitworks/phd/raw_data";
+subject = "sub7";
+matrixmetal = "agcl";
 
-filePath = root + "/sub4/agcl/fulldata_1702462922.h5"; %"/sub4/MXene/fulldata_1702464151.h5"; %"
+folderPath = root + "/" + subject + "/" + matrixmetal;
 
+files = dir(fullfile(folderPath, '*.h5'));
 
+for fileIdx = 1:length(files)
+    filePath = fullfile(folderPath, files(fileIdx).name);
 %% Parameters
 fs = 2400;  % Desired sampling frequency
 f0 = 50;    % Frequency to be removede
@@ -94,7 +99,7 @@ d_vr_unique = unique(d_vr);
 
 
 %% Plot all the data with the events
-figure;
+figure(1);
 hold on
 
 % Plot EMG
@@ -198,7 +203,7 @@ end
 
 
 % Plot the first three principal components with respect to time using subplots for each gesture
-figure;
+figure(2);
 
 for pc = 1:3
     subplot(3, 1, pc);
@@ -245,7 +250,7 @@ end
 [coeff, score] = pca(reshaped_array, 'NumComponents', 3);
 
 % Scatter plot the first three principal components with markers for each repetition
-figure;
+figure(3);
 hold on;
 scatter_handles = cell(size(segmented_EMG, 1), 1);  % To store scatter handles for legend
 
@@ -267,3 +272,4 @@ title('Scatter Plot of First Three Principal Components');
 % Create legend
 legend([scatter_handles{:}], trial_start_events, 'Interpreter', 'none');
 
+end
