@@ -15,7 +15,7 @@
 
 # Ignore MATLAB Simulink cache files
 slprj/
-Regrasp_2nd/__pycache__/
+Regrasp_2nd_Python/__pycache__/
 
 # Ignore MATLAB Simulink model files
 *.slx
@@ -27,11 +27,12 @@ Regrasp_2nd/__pycache__/
 ```
 
 # Ignore depedency from third party
-Regrasp_2nd/pyns/
+Regrasp_2nd_Python/pyns/
 
-Regrasp_2nd/Xippmex/
+Regrasp_2nd_Python/Xippmex/
+Regrasp_2nd_Matlab/Xippmex/
 
-Regrasp_2nd/Xipppy/
+Regrasp_2nd_Python/Xipppy/
 
 test_env
 
