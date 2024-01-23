@@ -9,7 +9,7 @@
 % Clean the world
 close all; fclose('all'); clc; clear;
 
-addpath('Xippmex')
+addpath('Regrasp_Dependency/Xippmex')
 
 %% settings
 % ---------------- plot timing ----------------
