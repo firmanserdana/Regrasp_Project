@@ -9,7 +9,7 @@
 % Clean the world
 close all; fclose('all'); clc; clear;
 
-addpath('Regrasp_Dependency/Xippmex')
+addpath('/home/firep1/Documents/gitworks/phd/ReWire/Rewire_Project/Regrasp_2nd_Matlab/Regrasp_Dependency/Xippmex')
 
 %% settings
 % ---------------- plot timing ----------------
