@@ -104,21 +104,13 @@ end
 % The function tcpip is substituted by the functions
 % tcpserver/tcpclient from Matlab version 2022a
 
-if verLessThan('matlab','9.12')
+
     % Open the TCP socket as server
-    t = tcpip('192.168.1.2', 45454, 'NetworkRole', 'server');
+    t = tcpip('0.0.0.0', 45454, 'NetworkRole', 'server');
     % Increase the input buffer size
     t.InputBufferSize = 500000; %190152;
     % Wait into this function until a client is connected
     fopen(t)
-else
-    % Open the TCP socket as server
-t = tcpserver('0.0.0.0', 45454, 'ByteOrder', 'big-endian');
-% Wait for a client to connect
-client = waitForConnection(t);
-% Open the connection
-fopen(client);
-end
 
 disp('Connected to the Socket')
 
