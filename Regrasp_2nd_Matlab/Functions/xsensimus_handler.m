@@ -1,47 +1,95 @@
-if isunix
-    % MATLAB Script
+function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, port, reset_interval)
+    if isunix
+        % Code to run on Linux platform
+        % Create a TCP connection to the server
+        tcp_client = tcpclient(host, port);
 
-% Define the path to your Python script
-python_script_path = 'xsens_linux.py';  % Replace with the actual path
+        try
+            % Plot initialization (assuming roll, pitch, yaw data will be plotted)
+            % figure;
+            % xlabel('Time');
+            % ylabel('Angle (degrees)');
+            % title('Sensor Data');
+            % grid on;
 
-% Create a system command to execute the Python script with sudo
-system_command = sprintf('sudo py -3.8 "%s"', python_script_path);
+            % Initialize arrays to store sensor data
+            time_data = []; % Time stamps
+            roll_data = []; % Roll values
+            pitch_data = []; % Pitch values
+            yaw_data = []; % Yaw values
 
-% Open a process to execute the command and read the output
-try
-    [status, result] = system(system_command);
-    if status ~= 0
-        error('Error executing the Python script: %s', result);
-    end
-    
-    while true
-        % Read a line from the Python script's output
-        line = fgetl(result.stdout);
+            % Initialize time counter for data reset
+            data_counter = 0;
 
-        if isempty(line)
-            break;  % End of the output
+            % Read and plot sensor data from the TCP server
+            while true
+                % Read a line of data from the TCP server
+                data = readline(tcp_client);
+
+                % Check if the end of file is reached
+                if isempty(data)
+                    break;
+                end
+
+                % Split the received data into roll, pitch, and yaw values
+                sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
+
+                % Check for NaN values and skip them
+                if any(isnan(sensor_data))
+                    continue;
+                end
+
+                % Extract roll, pitch, and yaw values
+                roll = sensor_data(1);
+                pitch = sensor_data(2);
+                yaw = sensor_data(3);
+
+                % Record time stamp
+                time_stamp = datetime('now');
+
+                % Append data to arrays
+                time_data = [time_data; time_stamp];
+                roll_data = [roll_data; roll];
+                pitch_data = [pitch_data; pitch];
+                yaw_data = [yaw_data; yaw];
+
+                % Plot the data
+                % plot(time_data, roll_data, 'r-', time_data, pitch_data, 'g-', time_data, yaw_data, 'b-');
+                % legend('Roll', 'Pitch', 'Yaw');
+                % drawnow;
+
+                % Increment data counter
+                data_counter = data_counter + 1;
+
+                % Reset data after a certain number of data points
+                if data_counter >= reset_interval
+                    % Close the current TCP connection
+                    fclose(tcp_client);
+
+                    % Create a new TCP connection
+                    tcp_client = tcpclient(host, port);
+
+                    % Reset data arrays
+                    time_data = [];
+                    roll_data = [];
+                    pitch_data = [];
+                    yaw_data = [];
+                    data_counter = 0;
+                end
+            end
+
+            % Close the TCP connection
+            fclose(tcp_client);
+
+        catch e
+            % Handle errors
+            disp(['Error: ' e.message]);
         end
 
-        % Process the received line (assuming it's in a specific format)
-        sensor_data = str2double_fast(line);
-
-        % Display or process the sensor data in MATLAB
-        disp(sensor_data);
-
-        % Add your additional processing here
-
-        pause(0.1);  % Adjust as needed based on the data streaming rate
+    elseif ispc
+        % Code to run on Windows platform
+        xsens_windows
+    else
+        disp('Platform not supported')
     end
-catch
-    % Handle errors or user interruptions
-end
-
-% Close the process
-fclose(process.stdout);
-fclose(process.stdin);
-
-elseif ispc
-    % Code to run on Windows platform
-else
-    disp('Platform not supported')
 end

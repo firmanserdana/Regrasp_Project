@@ -1,52 +1,31 @@
-# MIT License
-# -----------
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-# The above copyright notice
-# and this permission notice shall be included in all copies or substantial portions of the Software.
-# THE SOFTWARE IS PROVIDED "AS IS",
-# WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT,
-# TORT OR OTHERWISE,
-# ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-# -----------
-# Description: This script is used to receive data from Xsens MTw Awinda wireless motion trackers.
-# Author: Bryan He
-
-
-
 import sys
-import os #for ubuntu only
+import os
 import time
 from collections import deque
-from threading import Lock
+from threading import Lock, Thread
+import socket
 
 #---------Ubuntu may need to set up the pacakge location for XDA and keyboard-----#
 #module_path = "/home/<yourusername>/.local/lib/python3.8/site-packages/"
 #sys.path.insert(0, module_path)
 #import xsensdeviceapi.xsensdeviceapi_py38_64 as xda
 #---------------------------------------------------------------------------------#
-import xsensdeviceapi as xda #for windows only
+import xsensdeviceapi as xda  # for windows only
 import keyboard
 
-#remove the added path after importing(optional)
-#sys.path.pop(0)
-
+# remove the added path after importing(optional)
+# sys.path.pop(0)
 
 
 class XsPortInfoStr:
     def __str__(self, p):
         return f"Port: {p.portNumber():>2} ({p.portName()}) @ {p.baudrate():>7} Bd, ID: {p.deviceId().toString()}"
 
+
 class XsDeviceStr:
     def __str__(self, d):
         return f"ID: {d.deviceId().toString()} ({d.productCode()})"
+
 
 def find_closest_update_rate(supported_update_rates, desired_update_rate):
     if not supported_update_rates:
@@ -57,6 +36,7 @@ def find_closest_update_rate(supported_update_rates, desired_update_rate):
 
     closest_update_rate = min(supported_update_rates, key=lambda x: abs(x - desired_update_rate))
     return closest_update_rate
+
 
 class WirelessMasterCallback(xda.XsCallback):
     def __init__(self):
@@ -91,6 +71,7 @@ class WirelessMasterCallback(xda.XsCallback):
             else:
                 print(f"\nEVENT: MTW Error -> {dev.deviceId()}")
                 self.m_connectedMTWs.discard(dev)
+
 
 class MtwCallback(xda.XsCallback):
     def __init__(self, mtwIndex, device):
@@ -127,6 +108,22 @@ class MtwCallback(xda.XsCallback):
             if len(self.m_packetBuffer) > 300:
                 self.deleteOldestPacket()
 
+
+def stream_sensor_data(conn, mtw_callbacks):
+    euler_data = [xda.XsEuler()] * len(mtw_callbacks)
+    while True:
+        new_data_available = False
+        for i in range(len(mtw_callbacks)):
+            if mtw_callbacks[i].dataAvailable():
+                new_data_available = True
+                packet = mtw_callbacks[i].getOldestPacket()
+                euler_data[i] = packet.orientationEuler()
+                mtw_callbacks[i].deleteOldestPacket()
+
+        if new_data_available:
+            for i in range(len(mtw_callbacks)):
+                data_str = f"{euler_data[i].x():7.2f},{euler_data[i].y():7.2f},{euler_data[i].z():7.2f}\n"
+                conn.send(data_str.encode())
 
 
 if __name__ == '__main__':
@@ -199,7 +196,6 @@ if __name__ == '__main__':
 
         print("Waiting for MTW to wirelessly connect...\n")
 
-
         # This function checks for user input to break the loop
         def user_input_ready():
             return False  # Replace this with your method to detect user input
@@ -215,8 +211,6 @@ if __name__ == '__main__':
                 connected_mtw_count = next_count
 
             wait_for_connections = not keyboard.is_pressed('y')
-
-
 
         print("Starting measurement...")
         if not wireless_master_device.gotoMeasurement():
@@ -238,63 +232,50 @@ if __name__ == '__main__':
         for i in range(len(mtw_devices)):
             mtw_devices[i].addCallbackHandler(mtw_callbacks[i])
 
-        print("Creating a log file...")
-        logFileName = "logfile.mtb"
-        if wireless_master_device.createLogFile(logFileName) != xda.XRV_OK:
-            raise RuntimeError("Failed to create a log file. Aborting.")
-        else:
-            print("Created a log file: %s" % logFileName)
+        # print("Creating a log file...")
+        # logFileName = "logfile.mtb"
+        # if wireless_master_device.createLogFile(logFileName) != xda.XRV_OK:
+        #     raise RuntimeError("Failed to create a log file. Aborting.")
+        # else:
+        #     print("Created a log file: %s" % logFileName)
 
-        print("Starting recording...")
-        ready_to_record = False
+        # print("Starting recording...")
+        # ready_to_record = False
 
-        while not ready_to_record:
-            ready_to_record = all([mtw_callbacks[i].dataAvailable() for i in range(len(mtw_callbacks))])
-            if not ready_to_record:
-                print("Waiting for data available...")
-                time.sleep(0.5)
-            #     optional, enable heading reset before recording data, make sure all sensors have aligned physically the same heading!!
-            # else:
-            #     print("Do heading reset before recording data, make sure all sensors have aligned physically the same heading!!")
-            #     all([mtw_devices[i].resetOrientation(xda.XRM_Heading) for i in range(len(mtw_callbacks))])
+        # while not ready_to_record:
+        #     ready_to_record = all([mtw_callbacks[i].dataAvailable() for i in range(len(mtw_callbacks))])
+        #     if not ready_to_record:
+        #         print("Waiting for data available...")
+        #         time.sleep(0.5)
 
-        if not wireless_master_device.startRecording():
-            raise RuntimeError("Failed to start recording. Aborting.")
+        # if not wireless_master_device.startRecording():
+        #     raise RuntimeError("Failed to start recording. Aborting.")
 
         print("\nMain loop. Press any key to quit\n")
         print("Waiting for data available...")
 
-        euler_data = [xda.XsEuler()] * len(mtw_callbacks)
-        print_counter = 0
-        while not user_input_ready():
-            time.sleep(0)
+        # Creating TCP Server
+        HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
+        PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
 
-            new_data_available = False
-            for i in range(len(mtw_callbacks)):
-                if mtw_callbacks[i].dataAvailable():
-                    new_data_available = True
-                    packet = mtw_callbacks[i].getOldestPacket()
-                    euler_data[i] = packet.orientationEuler()
-                    mtw_callbacks[i].deleteOldestPacket()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind((HOST, PORT))
+            s.listen()
+            print(f"Server listening on {HOST}:{PORT}")
+            conn, addr = s.accept()
+            print(f"Connected by {addr}")
 
-            if new_data_available:
-                # print only 1/x of the data in the screen.
-                if print_counter % 1 == 0:
-                    for i in range(len(mtw_callbacks)):
-                        print(f"[{i}]: ID: {mtw_callbacks[i].device().deviceId()}, "
-                              f"Roll: {euler_data[i].x():7.2f}, "
-                              f"Pitch: {euler_data[i].y():7.2f}, "
-                              f"Yaw: {euler_data[i].z():7.2f}")
+            # Start streaming sensor data to the client in a separate thread
+            stream_thread = Thread(target=stream_sensor_data, args=(conn, mtw_callbacks))
+            stream_thread.start()
 
-                print_counter += 1
+            # Wait for user input to quit
+            while not user_input_ready():
+                time.sleep(0)
 
-        print("Setting config mode...")
-        if not wireless_master_device.gotoConfig():
-            raise RuntimeError(f"Failed to goto config mode: {wireless_master_device}")
-
-        print("Disabling radio...")
-        if not wireless_master_device.disableRadio():
-            raise RuntimeError(f"Failed to disable radio: {wireless_master_device}")
+            # Close the connection
+            conn.close()
 
     except Exception as ex:
         print(ex)
@@ -311,4 +292,3 @@ if __name__ == '__main__':
     print("Successful exit.")
     print("Press [ENTER] to continue.")
     input()
-

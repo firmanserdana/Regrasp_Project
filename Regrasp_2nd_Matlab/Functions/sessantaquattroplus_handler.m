@@ -1,3 +1,37 @@
+% % Initialization
+% FSAMP = 2;      % if MODE != 3: 0 = 500 Hz,  1 = 1000 Hz, 2 = 2000 Hz
+%                 % if MODE == 3: 0 = 2000 Hz, 1 = 4000 Hz, 2 = 8000 Hz
+% NCH  = 3;       % 0 = 8 channels, 1 = 16 channels, 2 = 32 channels, 3 = 64 channels
+% MODE = 0;       % 0 = Monopolar, 1 = Bipolar, 2 = Differential, 3 = Accelerometers, 6 = Impedance check, 7 = Test Mode
+% HRES = 0;       % 0 = 16 bits, 1 = 24 bits
+% HPF  = 1;       % 0 = DC coupled, 1 = High pass filter active
+% EXTEN = 0;      % 0 = standard input range, 1 = double range, 2 = range x 4, 3 = range x 8
+% TRIG = 0;       % 0 = Data transfer and REC on SD controlled remotely, 3 = REC on SD controlled from the pushbutton
+% REC  = 0;       % 0 = Stop data recording on SD card, 1 = start data recording on SD card
+% GO   = 1;       % 0 = just send the settings, 1 = send settings and start the data transfer
+
+% NumCycle = 10;
+
+% % Conversion factor for the bioelectrical signals to get the values in mV
+% ConvFact = 0.000286;
+
+% % -------------------------------------------------------------------------
+% % Create the command to send to Sessantaquattro
+% Command = 0;
+% Command = Command + GO;
+% Command = Command + REC * 2;
+% Command = Command + TRIG * 4;
+% Command = Command + EXTEN * 16;
+% Command = Command + HPF * 64;
+% Command = Command + HRES * 128;
+% Command = Command + MODE * 256;
+% Command = Command + NCH * 2048;
+% Command = Command + FSAMP * 8192;
+
+% % Conversion from decimal integer to its binary representation
+% dec2bin(Command)
+
+
 % Function to create the command based on input parameters
 function command = createCommand(FSAMP, NCH, MODE, HRES, HPF, EXTEN, TRIG, REC, GO)
     command = GO + REC * 2 + TRIG * 4 + EXTEN * 16 + HPF * 64 + HRES * 128 + MODE * 256 + NCH * 2048 + FSAMP * 8192;
@@ -39,18 +73,9 @@ end
 
 % Function to open the TCP socket
 function t = openSocket()
-    if verLessThan('matlab', '9.12')
-        t = tcpip('0.0.0.0', 45454, 'NetworkRole', 'server');
-        t.InputBufferSize = 500000;
-        fopen(t);
-    else
-        t = tcpserver(45454, "ByteOrder", "big-endian");
-        t.InputBufferSize = 500000;
-        fopen(t);
-        while (t.Connected < 1)
-            pause(0.1);
-        end
-    end
+    t = tcpip('0.0.0.0', 45454, 'NetworkRole', 'server');
+    t.InputBufferSize = 500000;
+    fopen(t);
     disp('Connected to the Socket');
 end
 
