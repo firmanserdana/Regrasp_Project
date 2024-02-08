@@ -29,7 +29,7 @@ data = [];
 stimulationsignals =[] ;
 subplot(2, 1, 1);  % Create the first subplot for data
 hData = plot(data);  % Plot the data
-title('Data');
+title('EMG Data');
 
 subplot(2, 1, 2);  % Create the second subplot for stimulation signals
 hStim = plot(stimulationsignals);  % Plot the stimulation signals
@@ -38,11 +38,9 @@ title('Stimulation Signals');
 while true
     data = sessantaquattroplus_handler().receiveData(t, vars.HRES, numChannels, sampFreq, vars.readWind);
     [dataNorm,dataEnv] = sessantaquattroplus_handler().processData(data,vars.MVC,vars.chX,bufData);
-    %stimulationsignals = xippmex_handler().runStimulationLoop(data, vars.h, vars.bufdata, vars.selected_elecs, vars.read_win, vars.stimChans, vars.cs, vars.env_thr, vars.forceRange_mV, vars.MVC, vars.nipClock_us, vars.msec2nip_clk, vars.AMP_STIM, cmd, cmdClear);
     
     % Update the data plot
-    plot(data);
-    
+    set(hData, 'YData', data);
     % Update the stimulation signals plot
     %set(hStim, 'YData', stimulationsignals);
     
