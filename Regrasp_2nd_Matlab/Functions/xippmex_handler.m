@@ -21,8 +21,8 @@ function setupStimulation()
         error('No stimulation hardware detected');
     end
 
-    stimChans = stimChans(1);   % solo a scopo dimostrativo, scrivo il codice
-    % per un solo canale ma nell'app posso scegliere il canale tra quelli disponibili
+    stimChans = stimChans(1);   % for demonstration purposes, I write the code
+    % for a single channel, but in the app I can choose the channel from the available ones
 
     % Flush stim buffer
     xippmex('spike',stimChans,1);
@@ -210,4 +210,3 @@ function runStimulationLoop(h, bufdata, selected_elecs, read_win, stimChans, cs,
         pause(0.01);
     end
 end
-
