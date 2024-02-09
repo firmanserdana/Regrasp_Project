@@ -8,6 +8,7 @@ classdef xippmex_handler
                 while ~status
                     status = xippmex;
                 end
+                disp('NIP is online.');
             catch
                 disp(["Could not find NIP."; "Check wired connection and open Trellis app."]);
                 % delete(app);
@@ -39,7 +40,7 @@ classdef xippmex_handler
             pause(0.5)  % give NIP some time to process the commands sent
         end
 
-        function initializeStimulation(stimChans, cs, phaseDur_us, fs_us, stimFreq, pulseAmpSteps)
+        function initializeStimulation(stimChans, cs, phaseDur_us, fs_us, stimFreq, pulseAmpSteps, nipClock_us, nip_clk2sec, AMP_STIM, AMP_NEURAL, cmd, cmdClear)
             % Enable stimulation on the NIP.
             % NOTE: If stimulation is not enabled, xippmex will enable and disable 
             % stimulation for each stim sequence it receives. This will have the 
@@ -57,6 +58,7 @@ classdef xippmex_handler
 
             pw_cycls = floor(phaseDur_us / nipClock_us);
             fs_cycls = floor(fs_us / nipClock_us);
+            cmd = [];
 
             for i = 1:length(stimChans)
                 cmd(i).elec    = stimChans(i);
@@ -105,16 +107,6 @@ classdef xippmex_handler
                 cmdClear(i).seq(1) = struct('length', 3, 'ampl', 0, 'pol', 0, ...
                     'fs', 0, 'enable', 0, 'delay', 0, 'ampSelect', AMP_NEURAL);
             end
-
-            % ... (Rest of your code)
-
-            % Additional parameters you might need
-            lastNipTime  = 0;
-            nipOffTime   = 0;
-            stimOff      = 0;
-
-            % Container for accumulating effective loop periods
-            time_passed = [];
         end
 
 
@@ -152,8 +144,7 @@ classdef xippmex_handler
                 % Read EMG data
                 if ~isempty(selected_elecs)
                     try
-                        %[EMG, timestamps] = xippmex('cont', selected_elecs, read_win * 1000, 'hi-res');
-                        timestamp = double(timestamps);
+                        % Read EMG data from buffer
                         EMG(find(EMG<-1000)) = 0; % Handle packet loss
 
                         % Write EMG data into buffer

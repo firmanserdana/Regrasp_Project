@@ -1,10 +1,26 @@
 classdef sessantaquattroplus_handler
     methods(Static)
-        function command = createCommand(FSAMP, NCH, MODE, HRES, HPF, EXTEN, TRIG, REC, GO)
-            command = GO + REC * 2 + TRIG * 4 + EXTEN * 16 + HPF * 64 + HRES * 128 + MODE * 256 + NCH * 2048 + FSAMP * 8192;
+
+        %% Open socket
+        function t = openSocket()
+
+            t = tcpip('0.0.0.0', 45454, 'NetworkRole', 'server');
+            t.InputBufferSize = 500000;
+            fopen(t);
+            disp('Connected to the Socket');
+
         end
-        
-        function numChannels = getNumChannels(NCH, MODE)
+
+        %% Configuration
+        function [numChannels,sampFreq,bufData] = configure(t, GO, REC, TRIG, EXTEN, HPF, HRES, MODE, NCH, FSAMP, bufWind)
+
+            % Create command
+            command = GO + REC * 2 + TRIG * 4 + EXTEN * 16 + HPF * 64 + HRES * 128 + MODE * 256 + NCH * 2048 + FSAMP * 8192;
+
+            % Send command
+            fwrite(t, command, 'int16');
+
+            % Get number of channels
             switch NCH
                 case 0
                     numChannels = (MODE == 1) * 12 + (MODE ~= 1) * 16;
@@ -18,9 +34,8 @@ classdef sessantaquattroplus_handler
                     disp('Wrong value for NCH');
                     numChannels = 0;
             end
-        end
-        
-        function sampFreq = getSamplingFrequency(FSAMP, MODE)
+
+            % Get sampling frequency
             switch FSAMP
                 case 0
                     sampFreq = (MODE == 3) * 2000 + (MODE ~= 3) * 500;
@@ -34,76 +49,59 @@ classdef sessantaquattroplus_handler
                     disp('Wrong value for FSAMP');
                     sampFreq = 0;
             end
+            
+            % Create buffer for data acquisition
+            bufData = dsp.AsyncBuffer(bufWind*sampFreq); % buffer
+
         end
-        
-        function t = openSocket()
-            t = tcpip('0.0.0.0', 45454, 'NetworkRole', 'server');
-            t.InputBufferSize = 500000;
-            fopen(t);
-            disp('Connected to the Socket');
-        end
-        
-        function data = receiveData(t, HRES, NumChannels, SampFreq)
-            blockData = (HRES == 1) * 3 * NumChannels * SampFreq + (HRES == 0) * 2 * NumChannels * SampFreq;
+
+        %% Receive data
+        function data = receiveData(t, HRES, NumChannels, SampFreq, readWind)
+
+            blockData = (HRES == 1) * 3 * NumChannels * SampFreq * readWind + (HRES == 0) * 2 * NumChannels * SampFreq * readWind;
             ChInd = (1:3:NumChannels * 3);
-            data = cell(1, 10);
-            for i = 1:10
-                while (t.BytesAvailable < blockData)
-                end
-                Temp = fread(t, [NumChannels * (HRES + 1), SampFreq], 'uint8');
-                data{i} = Temp(ChInd, :) * 65536 + Temp(ChInd + 1, :) * 256 + Temp(ChInd + 2, :);
-                ind = find(data{i} >= 8388608);
-                data{i}(ind) = data{i}(ind) - (16777216);
+
+            while (t.BytesAvailable < blockData)
             end
+
+            Temp = fread(t, [NumChannels * 3, SampFreq*readWind], 'uint8');
+            data = Temp(ChInd, :) * 65536 + Temp(ChInd + 1, :) * 256 + Temp(ChInd + 2, :);
+            ind = find(data >= 8388608);
+            data(ind) = data(ind) - (16777216);
+
+            %data = fread(t, [NumChannels * (HRES + 1), SampFreq*readWind], 'int16');
         end
-        
-        function plotData(data, HRES, NumChannels, ConvFact)
-            if (HRES == 1)
-                for i = 1:10
-                    subplot(2, 1, 1);
-                    hold off;
-                    for j = 1:4
-                        plot(data{i}(j, :) * ConvFact + 0.1 * (j - 1));
-                        hold on;
-                    end
-                    subplot(2, 1, 2);
-                    plot(rem((data{i}(NumChannels - 1, :)), 16384) * 8);
-                    drawnow;
-                end
-            else
-                subplot(2, 1, 1);
-                for i = 1:10
-                    hold off;
-                    for j = 1:NumChannels - 8
-                        plot(data{i}(j, :) * ConvFact + 0.5 * (j - 1));
-                        hold on;
-                    end
-                    subplot(2, 3, 4);
-                    hold off;
-                    for j = NumChannels - 7:NumChannels - 6
-                        plot(data{i}(j, :));
-                        hold on;
-                    end
-                    subplot(2, 3, 5);
-                    hold off;
-                    for j = NumChannels - 5:NumChannels - 2
-                        plot(data{i}(j, :));
-                        hold on;
-                    end
-                    subplot(2, 3, 6);
-                    hold off;
-                    for j = NumChannels - 1:NumChannels
-                        plot(data{i}(j, :));
-                        hold on;
-                    end
-                    drawnow;
-                end
-            end
+
+        %% Process data
+        function [dataNorm,dataEnv] = processData(data,MVC,chX, bufData)
+
+            % Take only the selected channel 
+            data = data(chX,:)';
+            
+            % Conversion factor for the bioelectrical signals to get the values in mV
+            ConvFact = 0.000286;
+            data = data*ConvFact;
+
+            % Write data into buffer
+            write(bufData, data);
+
+            % Read data from buffer without changing the number of unread samples (peek)
+            pointData = peek(bufData);
+
+            % Compute envelope using RMS
+            dataEnv = rms(pointData);
+
+            % Normalize envenlope and raw data with respect to MVC
+            dataNorm = data ./ MVC;
+            dataEnv = dataEnv / MVC;
+
         end
-        
+
+        %% Close socket
         function closeSocket(t)
             pause(0.5);
             clear("t");
         end
+
     end
 end
