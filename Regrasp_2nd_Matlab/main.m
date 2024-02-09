@@ -22,27 +22,25 @@ t = sessantaquattroplus_handler.openSocket();
 xippmex_handler = xippmex_handler();
 xippmex_handler.statusNIP();
 xippmex_handler.setupStimulation();
-xippmex_handler.initializeStimulation(vars.stimChans, vars.cs, vars.phaseDur_us, vars.fs_us, vars.stimFreq, vars.pulseAmpSteps, vars.nipClock_us, vars.nip_clk2sec, vars.nip_clk2msec, vars.nip_clk2usec, vars.AMP_STIM);
+[cmd, cmdClear] = xippmex_handler.initializeStimulation(vars.stimChans, vars.cs, vars.phaseDur_us, vars.fs_us, vars.stimFreq, vars.pulseAmpSteps, vars.nipClock_us, vars.nip_clk2sec, vars.AMP_STIM, vars.AMP_NEURAL);
 
 figure;  % Create a new figure window for the plot
-data = [];
-stimulationsignals =[] ;
 subplot(2, 1, 1);  % Create the first subplot for data
-hData = plot(data);  % Plot the data
+hData = plot(1);  % Plot the data
 title('EMG Data');
 
 subplot(2, 1, 2);  % Create the second subplot for stimulation signals
-hStim = plot(stimulationsignals);  % Plot the stimulation signals
+hStim = plot(1);  % Plot the stimulation signals
 title('Stimulation Signals');
 
 while true
     data = sessantaquattroplus_handler().receiveData(t, vars.HRES, numChannels, sampFreq, vars.readWind);
     [dataNorm,dataEnv] = sessantaquattroplus_handler().processData(data,vars.MVC,vars.chX,bufData);
-    
+    ampRngFrac = xippmex_handler().runStimulationLoop(dataEnv, bufData, vars.stimChans, vars.cs, vars.env_thr, vars.forceRange_mV, vars.MVC, vars.nipClock_us, vars.msec2nip_clk, vars.AMP_STIM, cmd, cmdClear);
     % Update the data plot
-    set(hData, 'YData', data);
+    set(hData, 'YData', dataNorm);
     % Update the stimulation signals plot
-    %set(hStim, 'YData', stimulationsignals);
+    set(hStim, 'YData', ampRngFrac);
     
     drawnow;  % Update the plot immediately
     

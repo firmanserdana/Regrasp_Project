@@ -40,7 +40,7 @@ classdef xippmex_handler
             pause(0.5)  % give NIP some time to process the commands sent
         end
 
-        function initializeStimulation(stimChans, cs, phaseDur_us, fs_us, stimFreq, pulseAmpSteps, nipClock_us, nip_clk2sec, AMP_STIM, AMP_NEURAL, cmd, cmdClear)
+        function [cmd, cmdClear] = initializeStimulation(stimChans, cs, phaseDur_us, fs_us, stimFreq, pulseAmpSteps, nipClock_us, nip_clk2sec, AMP_STIM, AMP_NEURAL)
             % Enable stimulation on the NIP.
             % NOTE: If stimulation is not enabled, xippmex will enable and disable 
             % stimulation for each stim sequence it receives. This will have the 
@@ -59,6 +59,7 @@ classdef xippmex_handler
             pw_cycls = floor(phaseDur_us / nipClock_us);
             fs_cycls = floor(fs_us / nipClock_us);
             cmd = [];
+            cmdClear = [];
 
             for i = 1:length(stimChans)
                 cmd(i).elec    = stimChans(i);
@@ -110,15 +111,14 @@ classdef xippmex_handler
         end
 
 
-        function ampRngFrac = runStimulationLoop(EMG, h, bufdata, selected_elecs, read_win, stimChans, cs, env_thr, forceRange_mV, MVC, nipClock_us, msec2nip_clk, AMP_STIM, cmd, cmdClear)
+        function ampRngFrac = runStimulationLoop(EMG, bufdata, stimChans, cs, env_thr, forceRange_mV, MVC, nipClock_us, msec2nip_clk, AMP_STIM, cmd, cmdClear)
             % Function body
             % Initialize variables
             lastNipTime  = 0;
             nipOffTime   = 0;
             stimOff      = 0;
             active_stim_ch = [];
-
-            while ishandle(h)
+           
                 start_meas = tic;
 
                 % Check if NIP is online
@@ -141,8 +141,7 @@ classdef xippmex_handler
                 end
                 lastNipTime = curNipTime;
 
-                % Read EMG data
-                if ~isempty(selected_elecs)
+                % Read EMG data from buffer
                     try
                         % Read EMG data from buffer
                         EMG(find(EMG<-1000)) = 0; % Handle packet loss
@@ -187,13 +186,6 @@ classdef xippmex_handler
                             end
                         end
 
-                        % Additional processing or data saving can be added here
-
-                    catch
-                        disp('Error reading EMG data.');
-                    end
-                end
-
                 % Your additional code or processing can be added here
 
                 % Measure the time passed in the loop
@@ -203,7 +195,9 @@ classdef xippmex_handler
                 % Optional: Pause to control loop rate
                 % You can adjust the pause duration based on the desired loop rate
                 pause(0.01);
-            end
+                catch
+                disp('Error reading EMG data.');
+                end
         end
     end
 end
