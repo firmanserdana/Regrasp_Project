@@ -1,27 +1,47 @@
-function buttonState = readButtonState(comPort)
-    % comPort: COM port of Arduino, e.g., 'COM3'
+classdef pillowbutton_handler
 
-    % Create a serial port object
-    s = serial(comPort, 'BaudRate', 9600);
+    methods(Static)
 
-    % Open the serial port
-    fopen(s);
 
-    try
-        % Read data from the Arduino
-        data = fscanf(s, '%s');
-        
-        % Parse JSON data
-        json = jsondecode(data);
-        
-        % Extract button state
-        buttonState = json.switch;
+        %% Open serial port
+        function s = openSerial()
+            % comPort: COM port of Arduino, e.g., 'COM3'
 
-    catch
-        disp('Error reading data from Arduino.');
-        buttonState = -1; % Return an error code
+            % Create a serial port object
+            s = serial(comPort, 'BaudRate', 9600);
+
+            % Open the serial port
+            fopen(s);
+        end
+
+
+        %% Read button state
+        function buttonState = readButtonState(s)
+
+            try
+                % Read data from the Arduino
+                data = fscanf(s, '%s');
+
+                % Parse JSON data
+                json = jsondecode(data);
+
+                % Extract button state
+                buttonState = json.switch;
+
+            catch
+                buttonState = -1; % Return an error code
+                disp('Error reading data from Arduino');
+
+            end
+        end
+
+
+        %% Close the serial port
+        function closeSerial(s)
+
+            fclose(s);
+            disp('serial port closed');
+        end
     end
 
-    % Close the serial port
-    fclose(s);
 end
