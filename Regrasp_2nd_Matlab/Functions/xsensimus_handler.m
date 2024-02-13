@@ -88,7 +88,14 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
 
     elseif ispc
         % Code to run on Windows platform
-        xsens_windows = xsens_windows();
+        switch computer
+            case 'PCWIN'
+                serverName = 'xsensdeviceapi_com32.IXsensDeviceApi';
+            case 'PCWIN64'
+                serverName = 'xsensdeviceapi_com64.IXsensDeviceApi';
+        end
+        h = actxserver(serverName);
+        xsens_windows = xsens_windows(h);
         xsens_windows.initialize();
         xsens_windows.startMeasurement();
         while true

@@ -1,6 +1,5 @@
 classdef xsens_windows
     properties
-        h % ActiveX server handle
         deviceID
         portS
         baudRate
@@ -19,7 +18,6 @@ classdef xsens_windows
     methods
         function obj = XsensController()
             % Constructor
-            obj.h = [];
             obj.deviceID = [];
             obj.portS = [];
             obj.baudRate = [];
@@ -35,7 +33,7 @@ classdef xsens_windows
             obj.packetCounter = [];
         end
         
-        function initialize(obj)
+        function initialize(obj,h)
             %% Launching activex server
             switch computer
                 case 'PCWIN'
@@ -43,10 +41,10 @@ classdef xsens_windows
                 case 'PCWIN64'
                     serverName = 'xsensdeviceapi_com64.IXsensDeviceApi';
             end
-            obj.h = actxserver(serverName);
+            h = actxserver(serverName);
             fprintf( '\n ActiveXsens server - activated \n' );
 
-            version = obj.h.XsControl_version;
+            version = h.XsControl_version;
             fprintf(' XDA version: %.0f.%.0f.%.0f\n',version{1:3})
             if length(version)>3
                 fprintf(' XDA build: %.0f %s\n',version{4:5});
@@ -55,16 +53,16 @@ classdef xsens_windows
             obj.scanPorts();
         end
         
-        function scanPorts(obj)
+        function scanPorts(obj,h)
             %% Scanning connection ports
             % ports rescanned must be reopened
-            p_br = obj.h.XsScanner_scanPorts(0, 100, true, true);
+            p_br = h.XsScanner_scanPorts(0, 100, true, true);
             fprintf( '\n Connection ports - scanned \n' );
 
             % check using device id's what kind of devices are connected.
-            obj.isMtw = cellfun(@(x) obj.h.XsDeviceId_isMtw(x),p_br(:,1));
-            obj.isDongle = cellfun(@(x) obj.h.XsDeviceId_isAwindaDongle(x),p_br(:,1));
-            obj.isStation = cellfun(@(x) obj.h.XsDeviceId_isAwindaStation(x),p_br(:,1));
+            obj.isMtw = cellfun(@(x) h.XsDeviceId_isMtw(x),p_br(:,1));
+            obj.isDongle = cellfun(@(x) h.XsDeviceId_isAwindaDongle(x),p_br(:,1));
+            obj.isStation = cellfun(@(x) h.XsDeviceId_isAwindaStation(x),p_br(:,1));
 
             if any(obj.isDongle|obj.isStation)
                 fprintf('\n Example dongle or station\n')
@@ -75,8 +73,8 @@ classdef xsens_windows
                 dev = find(obj.isMtw);
             else
                 fprintf('\n No device found. \n')
-                obj.h.XsControl_close();
-                delete(obj.h);
+                h.XsControl_close();
+                delete(h);
                 return
             end
 
@@ -97,19 +95,19 @@ classdef xsens_windows
             fprintf('\n Found %s on port %s, with ID: %s and baudRate: %.0f \n',devTypeStr, obj.portS, dec2hex(obj.deviceID), obj.baudRate);
         end
         
-        function startMeasurement(obj)
+        function startMeasurement(obj,h)
             %% Initialize Master Device
             % get device handle.
-            device = obj.h.XsControl_device(obj.deviceID);
+            device = h.XsControl_device(obj.deviceID);
 
             % To be able to get orientation data from a MTw, the filter in the
             % software needs to be turned on:
-            obj.h.XsDevice_setOptions(device, obj.h.XsOption_XSO_Orientation, 0);
-            obj.h.XsDevice_gotoConfig(device);
+            h.XsDevice_setOptions(device, h.XsOption_XSO_Orientation, 0);
+            h.XsDevice_gotoConfig(device);
 
             % Get the list of supported update rates and let the user choose the
             % one to set
-            supportUpdateRates = obj.h.XsDevice_supportedUpdateRates(device, obj.h.XsDataIdentifier_XDI_None);
+            supportUpdateRates = h.XsDevice_supportedUpdateRates(device, h.XsDataIdentifier_XDI_None);
             upRateIndex = [];
             while(isempty(upRateIndex))
                 fprintf('\n The supported update rates are: ');
@@ -123,7 +121,7 @@ classdef xsens_windows
             end
 
             % set the chosen update rate
-            obj.h.XsDevice_setUpdateRate(device, supportUpdateRates{upRateIndex});
+            h.XsDevice_setUpdateRate(device, supportUpdateRates{upRateIndex});
 
             if(any(obj.isDongle|obj.isStation))
                 % Let the user choose the desired radio channel
@@ -142,7 +140,7 @@ classdef xsens_windows
 
                 try
                     % enable radio
-                    obj.h.XsDevice_enableRadio(device, availableRadioChannels(upRadioChIndex));
+                    h.XsDevice_enableRadio(device, availableRadioChannels(upRadioChIndex));
                 catch
                     fprintf(' Radio is still turned on, remove device from pc and try again')
                 end % if radio is still on, this call will give an error
@@ -150,10 +148,10 @@ classdef xsens_windows
                 input('\n Undock the MTw devices from the Awinda station and wait until the devices are connected (synced leds), then press enter... \n');
 
                 % check which devices are found
-                children = obj.h.XsDevice_children(device);
+                children = h.XsDevice_children(device);
 
                 % make sure at least one sensor is connected.
-                devIdAll = cellfun(@(x) dec2hex(obj.h.XsDevice_deviceId(x)),children,'uniformOutput',false);
+                devIdAll = cellfun(@(x) dec2hex(h.XsDevice_deviceId(x)),children,'uniformOutput',false);
                 % check connected sensors, see which are accepted and which are
                 % rejected.
                 [obj.devicesUsed, obj.devIdUsed, obj.nDevs] = obj.checkConnectedSensors(devIdAll);
@@ -168,14 +166,14 @@ classdef xsens_windows
             %% Entering measurement mode
             fprintf('\n Activate measurement mode \n');
             % goto measurement mode
-            output = obj.h.XsDevice_gotoMeasurement(device);
+            output = h.XsDevice_gotoMeasurement(device);
 
             % display radio connection information
             if(any(obj.isDongle|obj.isStation))
-                fprintf('\n Connection has been established on channel %i with an update rate of %i Hz\n', obj.h.XsDevice_radioChannel(device), obj.h.XsDevice_updateRate(device));
+                fprintf('\n Connection has been established on channel %i with an update rate of %i Hz\n', h.XsDevice_radioChannel(device), h.XsDevice_updateRate(device));
             else
                 assert(any(obj.isMtw))
-                fprintf('\n Connection has been established with an update rate of %i Hz\n', obj.h.XsDevice_updateRate(device));
+                fprintf('\n Connection has been established with an update rate of %i Hz\n', h.XsDevice_updateRate(device));
             end
 
             % create figure for showing data
@@ -183,8 +181,8 @@ classdef xsens_windows
 
             % check filter profiles
             if ~isempty(obj.devicesUsed)
-                availableProfiles = obj.h.XsDevice_availableXdaFilterProfiles(obj.devicesUsed{1});
-                usedProfile = obj.h.XsDevice_xdaFilterProfile(obj.devicesUsed{1});
+                availableProfiles = h.XsDevice_availableXdaFilterProfiles(obj.devicesUsed{1});
+                usedProfile = h.XsDevice_xdaFilterProfile(obj.devicesUsed{1});
                 number = usedProfile{1};
                 version = usedProfile{2};
                 name = usedProfile{3};
@@ -199,14 +197,14 @@ classdef xsens_windows
 
             if output
                 % create log file
-                obj.h.XsDevice_createLogFile(device,'exampleLogfile.mtb');
+                h.XsDevice_createLogFile(device,'exampleLogfile.mtb');
                 fprintf('\n Logfile: %s created\n',fullfile(cd,'exampleLogfile.mtb'));
 
                 % start recording
-                obj.h.XsDevice_startRecording(device);
+                h.XsDevice_startRecording(device);
                 % register onLiveDataAvailable event
-                obj.h.registerevent({'onLiveDataAvailable',@obj.handleData});
-                obj.h.setCallbackOption(obj.h.XsComCallbackOptions_XSC_LivePacket, obj.h.XsComCallbackOptions_XSC_None);
+                h.registerevent({'onLiveDataAvailable',@handleData});
+                h.setCallbackOption(h.XsComCallbackOptions_XSC_LivePacket, h.XsComCallbackOptions_XSC_None);
                 % event handler will call stopAll when limit is reached
                 input('\n Press enter to stop measurement. \n');
 
@@ -216,7 +214,7 @@ classdef xsens_windows
             obj.stopAll();
         end
         
-        function handleData(obj, varargin)
+        function handleData(obj, varargin,h)
             % callback function for event: onLiveDataAvailable
             dataPacket = varargin{3}{2};
             deviceFound = varargin{3}{1};
@@ -228,13 +226,13 @@ classdef xsens_windows
                 obj.t{iDev} = [obj.t{iDev} obj.t{iDev}(end)+1];
             end
             if dataPacket
-                if obj.h.XsDataPacket_containsOrientation(dataPacket)
-                    oriC = cell2mat(obj.h.XsDataPacket_orientationEuler_1(dataPacket));
+                if h.XsDataPacket_containsOrientation(dataPacket)
+                    oriC = cell2mat(h.XsDataPacket_orientationEuler_1(dataPacket));
                     obj.packetCounter(iDev) = obj.packetCounter(iDev)+1;
                     obj.dataPlot{iDev} = [obj.dataPlot{iDev} oriC];
                 end
 
-                obj.h.liveDataPacketHandled(deviceFound, dataPacket);
+                h.liveDataPacketHandled(deviceFound, dataPacket);
 
                 % draw
                 if obj.packetCounter(iDev)>10
@@ -251,34 +249,34 @@ classdef xsens_windows
             end
         end
         
-        function stopAll(obj)
+        function stopAll(obj,h)
             % close everything in the right way
-            if ~isempty(obj.h.eventlisteners)
-                obj.h.unregisterevent({'onLiveDataAvailable',@obj.handleData});
-                obj.h.setCallbackOption(obj.h.XsComCallbackOptions_XSC_None, obj.h.XsComCallbackOptions_XSC_LivePacket);
+            if ~isempty(h.eventlisteners)
+                h.unregisterevent({'onLiveDataAvailable',@handleData});
+                h.setCallbackOption(h.XsComCallbackOptions_XSC_None, h.XsComCallbackOptions_XSC_LivePacket);
             end
             % stop recording, showing data
             fprintf('\n Stop recording, go to config mode \n');
-            obj.h.XsDevice_stopRecording(obj.devicesUsed{1});
-            obj.h.XsDevice_gotoConfig(obj.devicesUsed{1});
+            h.XsDevice_stopRecording(obj.devicesUsed{1});
+            h.XsDevice_gotoConfig(obj.devicesUsed{1});
             % disable radio for station or dongle
             if any(obj.isStation|obj.isDongle)
-                obj.h.XsDevice_disableRadio(obj.devicesUsed{1});
+                h.XsDevice_disableRadio(obj.devicesUsed{1});
             end
             % close log file
             fprintf('\n Close log file \n');
-            obj.h.XsDevice_closeLogFile(obj.devicesUsed{1});
+            h.XsDevice_closeLogFile(obj.devicesUsed{1});
             % on close, devices go to config mode.
             fprintf('\n Close port \n');
             % close port
-            obj.h.XsControl_closePort(obj.portS);
+            h.XsControl_closePort(obj.portS);
             % close handle
-            obj.h.XsControl_close();
+            h.XsControl_close();
             % delete handle
-            delete(obj.h);
+            delete(h);
         end
         
-        function [devicesUsed, devIdUsed, nDevs] = checkConnectedSensors(obj, devIdAll)
+        function [devicesUsed, devIdUsed, nDevs] = checkConnectedSensors(obj, devIdAll,h)
             childUsed = false(size(obj.devicesUsed));
             if isempty(obj.devicesUsed)
                 fprintf('\n No devices found \n')
@@ -287,7 +285,7 @@ classdef xsens_windows
             else
                 % check which sensors are connected
                 for ic=1:length(obj.devicesUsed)
-                    if obj.h.XsDevice_connectivityState(obj.devicesUsed{ic}) == obj.h.XsConnectivityState_XCS_Wireless
+                    if h.XsDevice_connectivityState(obj.devicesUsed{ic}) == h.XsConnectivityState_XCS_Wireless
                         childUsed(ic) = true;
                     end
                 end
@@ -313,11 +311,11 @@ classdef xsens_windows
                     for iR=1:length(change)
                         if childUsed(change(iR))
                             % reject sensors
-                            obj.h.XsDevice_rejectConnection(obj.devicesUsed{change(iR)});
+                            h.XsDevice_rejectConnection(obj.devicesUsed{change(iR)});
                             childUsed(change(iR)) = false;
                         else
                             % accept sensors
-                            obj.h.XsDevice_acceptConnection(obj.devicesUsed{change(iR)});
+                            h.XsDevice_acceptConnection(obj.devicesUsed{change(iR)});
                             childUsed(change(iR)) = true;
                         end
                     end
@@ -337,7 +335,7 @@ classdef xsens_windows
             nDevs = sum(childUsed);
         end
         
-        function [t, dataPlot, linePlot, packetCounter] = createFigForDisplay(obj, nDevs, deviceIds)
+        function [t, dataPlot, linePlot, packetCounter] = createFigForDisplay(obj, nDevs, deviceIds,h)
             [dataPlot{1:nDevs}] = deal([]);
             [linePlot{1:nDevs}] = deal([]);
             [t{1:nDevs}] = deal([]);
@@ -363,7 +361,7 @@ classdef xsens_windows
             packetCounter = zeros(nDevs,1);
         end
 
-        function data = getData(obj)
+        function data = getData(obj,h)
             % Retrieve the data without plotting
             data = obj.dataPlot;
         end
