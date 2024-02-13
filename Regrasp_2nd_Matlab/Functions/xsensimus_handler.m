@@ -90,8 +90,12 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
         % Code to run on Windows platform
         while true
             [t,dataPlot] = xsens_windows();
-            time_data = t;
-            [roll_data, pitch_data, yaw_data] = [dataPlot.roll, dataPlot.pitch, dataPlot.yaw];
+            if numel(time_data) >= reset_interval
+                time_data = [];
+                dataPlot = [];
+            end
+            time_data = [time_data; t];
+            [roll_data, pitch_data, yaw_data] = dataPlot{1,1};
             if ~isempty(time_data)
                 break;
             end
