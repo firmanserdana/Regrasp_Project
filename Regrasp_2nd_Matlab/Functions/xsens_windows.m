@@ -1,8 +1,4 @@
 function xsens_windows(tcpServerAddress, tcpServerPort)
-    % Ensure the TCP/IP Toolbox is installed and available
-    if ~license('test', 'instrument_control_toolbox')
-        error('TCP/IP Toolbox is not available. Make sure it is installed and licensed.');
-    end
     
     % Create a TCP/IP object
     tcpipServer = tcpip(tcpServerAddress, tcpServerPort, 'NetworkRole', 'server');
