@@ -4,7 +4,7 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
         % Look for how to run the xsens server on linux
     elseif ispc
         % Code to run on Windows platform
-        f = parfeval(@xsens_windows,0,host,port); 
+        f = parfeval(@xsens_windows,0,host,port,'Timeout',10); 
     else
         disp('Platform not supported')
     end
