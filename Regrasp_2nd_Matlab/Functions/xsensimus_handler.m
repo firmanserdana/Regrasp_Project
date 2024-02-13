@@ -96,8 +96,8 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
         end
         h = actxserver(serverName);
         xsens_win = xsens_windows(h);
-        xsens_win.initialize();
-        xsens_win.startMeasurement();
+        xsens_win.initialize(h);
+        xsens_win.startMeasurement(h);
         while true
             data = xsens_win.getData();
             [roll, pitch, yaw] = xsens_win.extractEuler(data);
