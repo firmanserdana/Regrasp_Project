@@ -88,16 +88,23 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
 
     elseif ispc
         % Code to run on Windows platform
+         % Initialize arrays to store sensor data
+            time_data = []; % Time stamps
+            roll_data = []; % Roll values
+            pitch_data = []; % Pitch values
+            yaw_data = []; % Yaw values
         while true
             [t,dataPlot] = xsens_windows();
+            time_data = [time_data; t{1,1}(1,:)];
+            roll_data = dataPlot{1,1}(1,:);
+            pitch_data = dataPlot{1,1}(2,:);
+            yaw_data = dataPlot{1,1}(3,:);
+            if ~isempty(time_data)
+                break;
+            end
             if numel(time_data) >= reset_interval
                 time_data = [];
                 dataPlot = [];
-            end
-            time_data = [time_data; t];
-            [roll_data, pitch_data, yaw_data] = dataPlot{1,1};
-            if ~isempty(time_data)
-                break;
             end
         end
     else
