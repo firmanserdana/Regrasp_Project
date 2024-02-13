@@ -88,12 +88,14 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
 
     elseif ispc
         % Code to run on Windows platform
-        xsens_wind = xsens_windows();
-        xsens_wind.start();
+        xsens_windows(host, port);
+        global tcpipServerObject;
+    
+        % Read the incoming data
         while true
-            [time_data, roll_data, pitch_data, yaw_data] = xsens_wind.get_data();
-            if ~isempty(time_data)
-                break;
+            if tcpipServerObject.BytesAvailable > 0
+                data = fread(tcpipServerObject, tcpipServerObject.BytesAvailable);
+                disp(data);
             end
         end
     else
