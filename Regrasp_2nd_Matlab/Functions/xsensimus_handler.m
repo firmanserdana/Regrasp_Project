@@ -4,14 +4,14 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
         % Look for how to run the xsens server on linux
     elseif ispc
         % Code to run on Windows platform
-        f = parfeval(xsens_windows(host, port)); 
+        f = parfeval(@xsens_windows,0,host,port); 
     else
         disp('Platform not supported')
     end
-    % Create a TCP connection to the server
-    tcp_client = tcpclient(host, port);
 
     try
+        % Create a TCP connection to the server
+        tcp_client = tcpclient(host, port);
         % Plot initialization (assuming roll, pitch, yaw data will be plotted)
         % figure;
         % xlabel('Time');
