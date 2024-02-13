@@ -82,6 +82,9 @@ function [t,dataPlot] = xsens_windows
             catch
                 fprintf(' Radio is still turned on, remove device from pc and try again')
             end % if radio is still on, this call will give an error
+            
+            input('\n Undock the MTw devices from the Awinda station and wait until the devices are connected (synced leds), then press enter... \n');
+            
             % check which devices are found
             children = h.XsDevice_children(device);
     
