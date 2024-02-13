@@ -95,12 +95,12 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
                 serverName = 'xsensdeviceapi_com64.IXsensDeviceApi';
         end
         h = actxserver(serverName);
-        xsens_windows = xsens_windows(h);
-        xsens_windows.initialize();
-        xsens_windows.startMeasurement();
+        xsens_win = xsens_windows(h);
+        xsens_win.initialize();
+        xsens_win.startMeasurement();
         while true
-            data = xsens_windows.getData();
-            [roll, pitch, yaw] = xsens_windows.extractEuler(data);
+            data = xsens_win.getData();
+            [roll, pitch, yaw] = xsens_win.extractEuler(data);
             time_stamp = datetime('now');
             time_data = [time_data; time_stamp];
             roll_data = [roll_data; roll];
