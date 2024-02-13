@@ -95,7 +95,7 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
                 serverName = 'xsensdeviceapi_com64.IXsensDeviceApi';
         end
         h = actxserver(serverName);
-        xsens_win = xsens_windows(h);
+        xsens_win = xsens_windows();
         xsens_win.initialize(h);
         xsens_win.startMeasurement(h);
         while true

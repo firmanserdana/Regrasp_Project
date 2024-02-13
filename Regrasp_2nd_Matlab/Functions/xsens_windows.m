@@ -50,7 +50,7 @@ classdef xsens_windows
                 fprintf(' XDA build: %.0f %s\n',version{4:5});
             end
             
-            obj.scanPorts();
+            obj.scanPorts(h);
         end
         
         function scanPorts(obj,h)
