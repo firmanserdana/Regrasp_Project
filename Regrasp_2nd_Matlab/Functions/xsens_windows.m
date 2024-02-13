@@ -1,4 +1,4 @@
-classdef xsens_windows < handle
+classdef xsens_windows
     properties
         h % ActiveX server handle
         deviceID
