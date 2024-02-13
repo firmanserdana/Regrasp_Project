@@ -1,4 +1,4 @@
-function [t,dataPlot] = xsens_windows()
+function [t,dataPlot] = xsens_windows
     %% Launching activex server
         switch computer
             case 'PCWIN'
@@ -144,7 +144,7 @@ function [t,dataPlot] = xsens_windows()
         end
     
         % create figure for showing data
-        %[t, dataPlot, linePlot, packetCounter] = createFigForDisplay(nDevs, devIdUsed);
+        [t, dataPlot, linePlot, packetCounter] = createFigForDisplay(nDevs, devIdUsed);
     
         % check filter profiles
         if ~isempty(devicesUsed)
@@ -206,10 +206,10 @@ function [t,dataPlot] = xsens_windows()
                     if length(t) > 1000
                         t{iDev}(1:end-990) = [];
                         dataPlot{iDev}(:,1:end-990) = [];
-                        %set(get(linePlot{iDev}(1),'parent'),'xlim',[t{iDev}(1) t{iDev}(end)+10]);
+                        set(get(linePlot{iDev}(1),'parent'),'xlim',[t{iDev}(1) t{iDev}(end)+10]);
                     end
                     for i=1:3
-                        %set(linePlot{iDev}(i),'xData',t{iDev},'ydata',dataPlot{iDev}(i,:));
+                        set(linePlot{iDev}(i),'xData',t{iDev},'ydata',dataPlot{iDev}(i,:));
                     end
                     packetCounter(iDev) = 0;
                 end
