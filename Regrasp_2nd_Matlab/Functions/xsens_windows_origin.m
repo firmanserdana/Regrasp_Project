@@ -72,16 +72,48 @@ function [t,dataPlot] = xsens_windows
         h.XsDevice_setOptions(device, h.XsOption_XSO_Orientation, 0);
         h.XsDevice_gotoConfig(device);
     
+        % Get the list of supported update rates and let the user choose the
+        % one to set
+        supportUpdateRates = h.XsDevice_supportedUpdateRates(device, h.XsDataIdentifier_XDI_None);
+        upRateIndex = [];
+        while(isempty(upRateIndex))
+            fprintf('\n The supported update rates are: ');
+            fprintf('%i, ',supportUpdateRates{:});
+            fprintf('\n');
+            selectedUpdateRate = input(' Which update rate do you want to use ? ');
+            if (isempty(selectedUpdateRate))
+                continue;
+            end
+            upRateIndex = find([supportUpdateRates{:}] == selectedUpdateRate);
+        end
+    
         % set the choosen update rate
-        h.XsDevice_setUpdateRate(device, 120);
+        h.XsDevice_setUpdateRate(device, supportUpdateRates{upRateIndex});
     
         if(any(isDongle|isStation))
+            % Let the user choose the desired radio channel
+            availableRadioChannels = [11 12 13 14 15 16 17 18 19 20 21 22 23 24 25];
+            upRadioChIndex = [];
+            while(isempty(upRadioChIndex))
+                fprintf('\n The available radio channels are: ');
+                fprintf('%i, ',availableRadioChannels);
+                fprintf('\n');
+                selectedRadioCh = input(' Which radio channel do you want to use ? ');
+                if (isempty(selectedRadioCh))
+                    continue;
+                end
+                upRadioChIndex = find(availableRadioChannels == selectedRadioCh);
+            end
+    
             try
                 % enable radio
-                h.XsDevice_enableRadio(device, 25);
+                h.XsDevice_enableRadio(device, availableRadioChannels(upRadioChIndex));
             catch
                 fprintf(' Radio is still turned on, remove device from pc and try again')
             end % if radio is still on, this call will give an error
+    
+            input('\n Undock the MTw devices from the Awinda station and wait until the devices are connected (synced leds), then press enter... \n');
+    
             % check which devices are found
             children = h.XsDevice_children(device);
     
@@ -131,6 +163,10 @@ function [t,dataPlot] = xsens_windows
         end
     
         if output
+            % create log file
+            h.XsDevice_createLogFile(device,'exampleLogfile.mtb');
+            fprintf('\n Logfile: %s created\n',fullfile(cd,'exampleLogfile.mtb'));
+    
             % start recording
             h.XsDevice_startRecording(device);
             % register onLiveDataAvailable event
@@ -170,11 +206,11 @@ function [t,dataPlot] = xsens_windows
                     if length(t) > 1000
                         t{iDev}(1:end-990) = [];
                         dataPlot{iDev}(:,1:end-990) = [];
-                        %set(get(linePlot{iDev}(1),'parent'),'xlim',[t{iDev}(1) t{iDev}(end)+10]);
+                        set(get(linePlot{iDev}(1),'parent'),'xlim',[t{iDev}(1) t{iDev}(end)+10]);
                     end
-                    % for i=1:3
-                    %     set(linePlot{iDev}(i),'xData',t{iDev},'ydata',dataPlot{iDev}(i,:));
-                    % end
+                    for i=1:3
+                        set(linePlot{iDev}(i),'xData',t{iDev},'ydata',dataPlot{iDev}(i,:));
+                    end
                     packetCounter(iDev) = 0;
                 end
             end
@@ -234,7 +270,7 @@ function [t,dataPlot] = xsens_windows
                     I = find(strcmp(devIdAll, accepted{i}));
                     fprintf(' %d - %s\n', I,accepted{i})
                 end
-                str = 'y';
+                str = input('\n Keep current status?(y/n) \n','s');
                 change = [];
                 if strcmp(str,'n')
                     str = input('\n Type the numbers of the sensors (csv list, e.g. "1,2,3") from which status should be changed \n (if accepted than reject or the other way around):\n','s');
@@ -281,14 +317,14 @@ function [t,dataPlot] = xsens_windows
             n = ceil(devPerFig/m);
             lDev = 0;
             for iFig=1:nFigs
-                %figure('name',['Example MTw_' num2str(iFig)])
+                figure('name',['Example MTw_' num2str(iFig)])
                 iPlot = 0;
                 for iDev = lDev+1:min(iFig*devPerFig, nDevs)
                     iPlot = iPlot+1;
-                    %ax = subplot(m,n,iPlot);
-                    %linePlot{iDev} = plot(ax, 0,[NaN NaN NaN]);
-                    %title(['Orientation data ' deviceIds{iDev}]), xlabel('sample'), ylabel('euler (deg)')
-                    %legend(ax, 'roll','pitch','yaw');
+                    ax = subplot(m,n,iPlot);
+                    linePlot{iDev} = plot(ax, 0,[NaN NaN NaN]);
+                    title(['Orientation data ' deviceIds{iDev}]), xlabel('sample'), ylabel('euler (deg)')
+                    legend(ax, 'roll','pitch','yaw');
                 end
                 lDev = iDev;
             end
