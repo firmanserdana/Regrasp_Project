@@ -1,24 +1,5 @@
-function xsens_windows(tcpServerAddress, tcpServerPort)
-    
-    % Create a TCP/IP object
-    tcpipServer = tcpip(tcpServerAddress, tcpServerPort, 'NetworkRole', 'server');
-    
-    % Set the size of the input buffer
-    tcpipServer.InputBufferSize = 4096;
-    
-    % Set the callback function for incoming data
-    tcpipServer.BytesAvailableFcn = @tcpipServerCallback;
-    
-    % Open the connection
-    fopen(tcpipServer);
-    
-    % Define a global variable to store the TCP/IP object
-    global tcpipServerObject;
-    tcpipServerObject = tcpipServer;
-
-    try
-        %% Original Xsens Data Acquisition Code
-        %% Launching activex server
+function [t,dataPlot] = xsens_windows()
+    %% Launching activex server
         switch computer
             case 'PCWIN'
                 serverName = 'xsensdeviceapi_com32.IXsensDeviceApi';
@@ -34,7 +15,7 @@ function xsens_windows(tcpServerAddress, tcpServerPort)
             fprintf(' XDA build: %.0f %s\n',version{4:5});
         end
     
-        %% Scanning connection ports
+    %% Scanning connection ports
         % ports rescanned must be reopened
         p_br = h.XsScanner_scanPorts(0, 100, true, true);
         fprintf( '\n Connection ports - scanned \n' );
@@ -82,7 +63,7 @@ function xsens_windows(tcpServerAddress, tcpServerPort)
             return;
         end
     
-        %% Initialize Master Device
+    %% Initialize Master Device
         % get device handle.
         device = h.XsControl_device(deviceID);
     
@@ -149,7 +130,7 @@ function xsens_windows(tcpServerAddress, tcpServerPort)
             devicesUsed = {device};
         end
     
-        %% Entering measurement mode
+    %% Entering measurement mode
         fprintf('\n Activate measurement mode \n');
         % goto measurement mode
         output = h.XsDevice_gotoMeasurement(device);
@@ -162,16 +143,36 @@ function xsens_windows(tcpServerAddress, tcpServerPort)
             fprintf('\n Connection has been established with an update rate of %i Hz\n', h.XsDevice_updateRate(device));
         end
     
-        % Create figure for showing data
+        % create figure for showing data
         %[t, dataPlot, linePlot, packetCounter] = createFigForDisplay(nDevs, devIdUsed);
     
+        % check filter profiles
+        if ~isempty(devicesUsed)
+            availableProfiles = h.XsDevice_availableXdaFilterProfiles(devicesUsed{1});
+            usedProfile = h.XsDevice_xdaFilterProfile(devicesUsed{1});
+            number = usedProfile{1};
+            version = usedProfile{2};
+            name = usedProfile{3};
+            fprintf('\n Used profile: %s(%.0f), version %.0f.\n',name,number,version)
+            if any([availableProfiles{:,1}] ~= number)
+                fprintf('\n Other available profiles are: \n')
+                for iP=1:size(availableProfiles,1)
+                    fprintf(' Profile: %s(%.0f), version %.0f.\n',availableProfiles{iP,3},availableProfiles{iP,1},availableProfiles{iP,2})
+                end
+            end
+        end
+    
         if output
-            % Start recording
+            % create log file
+            h.XsDevice_createLogFile(device,'exampleLogfile.mtb');
+            fprintf('\n Logfile: %s created\n',fullfile(cd,'exampleLogfile.mtb'));
+    
+            % start recording
             h.XsDevice_startRecording(device);
-            % Register onLiveDataAvailable event
+            % register onLiveDataAvailable event
             h.registerevent({'onLiveDataAvailable',@handleData});
             h.setCallbackOption(h.XsComCallbackOptions_XSC_LivePacket, h.XsComCallbackOptions_XSC_None);
-            % Event handler will call stopAll when limit is reached
+            % event handler will call stopAll when limit is reached
             input('\n Press enter to stop measurement. \n');
     
         else
@@ -179,118 +180,154 @@ function xsens_windows(tcpServerAddress, tcpServerPort)
         end
         stopAll;
     
-    catch exception
-        % Close the TCP/IP connection in case of an error
-        fclose(tcpipServer);
-        delete(tcpipServer);
-        rethrow(exception);
-    end
-    
     %% Event handler
-    function handleData(varargin)
-        % Callback function for event: onLiveDataAvailable
-        dataPacket = varargin{3}{2};
-        deviceFound = varargin{3}{1};
-        
-        if dataPacket
-            if h.XsDataPacket_containsOrientation(dataPacket)
-                oriC = cell2mat(h.XsDataPacket_orientationEuler_1(dataPacket));
-                % Send the data to the TCP/IP client
-                fwrite(tcpipServerObject, oriC, 'double');
+        function handleData(varargin)
+            % callback function for event: onLiveDataAvailable
+            dataPacket = varargin{3}{2};
+            deviceFound = varargin{3}{1};
+    
+            iDev = find(cellfun(@(x) x==deviceFound, devicesUsed));
+            if isempty(t{iDev})
+                t{iDev} = 1;
+            else
+                t{iDev} = [t{iDev} t{iDev}(end)+1];
             end
-            
-            h.liveDataPacketHandled(deviceFound);
-        end
-    end
+            if dataPacket
+                if h.XsDataPacket_containsOrientation(dataPacket)
+                    oriC = cell2mat(h.XsDataPacket_orientationEuler_1(dataPacket));
+                    packetCounter(iDev) = packetCounter(iDev)+1;
+                    dataPlot{iDev} = [dataPlot{iDev} oriC];
+                end
     
-    function stopAll
-        % Close everything in the right way
-        if ~isempty(h.eventlisteners)
-            h.unregisterevent({'onLiveDataAvailable',@handleData});
-            h.setCallbackOption(h.XsComCallbackOptions_XSC_None, h.XsComCallbackOptions_XSC_LivePacket);
-        end
-        % Stop recording
-        fprintf('\n Stop recording, go to config mode \n');
-        h.XsDevice_stopRecording(device);
-        h.XsDevice_gotoConfig(device);
-        % Disable radio for station or dongle
-        if any(isStation|isDongle)
-            h.XsDevice_disableRadio(device);
-        end
-        % Close handle
-        h.XsControl_close();
-        delete(h);
-    end
+                h.liveDataPacketHandled(deviceFound, dataPacket);
     
-    function [devicesUsed, devIdUsed, nDevs] = checkConnectedSensors(devIdAll)
-        childUsed = false(size(children));
-        if isempty(children)
-            fprintf('\n No devices found \n')
-            stopAll
-            error('MTw:example:devicdes','No devices found')
-        else
-            % Check which sensors are connected
-            for ic=1:length(children)
-                if h.XsDevice_connectivityState(children{ic}) == h.XsConnectivityState_XCS_Wireless
-                    childUsed(ic) = true;
+                % draw
+                if packetCounter(iDev)>10
+                    if length(t) > 1000
+                        t{iDev}(1:end-990) = [];
+                        dataPlot{iDev}(:,1:end-990) = [];
+                        %set(get(linePlot{iDev}(1),'parent'),'xlim',[t{iDev}(1) t{iDev}(end)+10]);
+                    end
+                    for i=1:3
+                        %set(linePlot{iDev}(i),'xData',t{iDev},'ydata',dataPlot{iDev}(i,:));
+                    end
+                    packetCounter(iDev) = 0;
                 end
             end
-            % Show which sensors are connected
-            fprintf('\n Devices rejected:\n')
-            rejects = devIdAll(~childUsed);
-            I=0;
-            for i=1:length(rejects)
-                I = find(strcmp(devIdAll, rejects{i}));
-                fprintf(' %d - %s\n', I,rejects{i})
+        end
+    
+        function stopAll
+            % close everything in the right way
+            if ~isempty(h.eventlisteners)
+                h.unregisterevent({'onLiveDataAvailable',@handleData});
+            h.setCallbackOption(h.XsComCallbackOptions_XSC_None, h.XsComCallbackOptions_XSC_LivePacket);
             end
-            fprintf('\n Devices accepted:\n')
-            accepted = devIdAll(childUsed);
-            for i=1:length(accepted)
-                I = find(strcmp(devIdAll, accepted{i}));
-                fprintf(' %d - %s\n', I,accepted{i})
+            % stop recording, showing data
+            fprintf('\n Stop recording, go to config mode \n');
+            h.XsDevice_stopRecording(device);
+            h.XsDevice_gotoConfig(device);
+            % disable radio for station or dongle
+            if any(isStation|isDongle)
+                h.XsDevice_disableRadio(device);
             end
-            str = input('\n Keep current status?(y/n) \n','s');
-            change = [];
-            if strcmp(str,'n')
-                str = input('\n Type the numbers of the sensors (csv list, e.g. "1,2,3") from which status should be changed \n (if accepted than reject or the other way around):\n','s');
-                change = str2double(regexp(str, ',', 'split'));
-                for iR=1:length(change)
-                    if childUsed(change(iR))
-                        % Reject sensors
-                        h.XsDevice_rejectConnection(children{change(iR)});
-                        childUsed(change(iR)) = false;
-                    else
-                        % Accept sensors
-                        h.XsDevice_acceptConnection(children{change(iR)});
-                        childUsed(change(iR)) = true;
+            % close log file
+            fprintf('\n Close log file \n');
+            h.XsDevice_closeLogFile(device);
+            % on close, devices go to config mode.
+            fprintf('\n Close port \n');
+            % close port
+            h.XsControl_closePort(portS);
+            % close handle
+            h.XsControl_close();
+            % delete handle
+            delete(h);
+        end
+    
+        function [devicesUsed, devIdUsed, nDevs] = checkConnectedSensors(devIdAll)
+            childUsed = false(size(children));
+            if isempty(children)
+                fprintf('\n No devices found \n')
+                stopAll
+                error('MTw:example:devicdes','No devices found')
+            else
+                % check which sensors are connected
+                for ic=1:length(children)
+                    if h.XsDevice_connectivityState(children{ic}) == h.XsConnectivityState_XCS_Wireless
+                        childUsed(ic) = true;
                     end
                 end
+                % show wich sensors are connected
+                fprintf('\n Devices rejected:\n')
+                rejects = devIdAll(~childUsed);
+                I=0;
+                for i=1:length(rejects)
+                    I = find(strcmp(devIdAll, rejects{i}));
+                    fprintf(' %d - %s\n', I,rejects{i})
+                end
+                fprintf('\n Devices accepted:\n')
+                accepted = devIdAll(childUsed);
+                for i=1:length(accepted)
+                    I = find(strcmp(devIdAll, accepted{i}));
+                    fprintf(' %d - %s\n', I,accepted{i})
+                end
+                str = input('\n Keep current status?(y/n) \n','s');
+                change = [];
+                if strcmp(str,'n')
+                    str = input('\n Type the numbers of the sensors (csv list, e.g. "1,2,3") from which status should be changed \n (if accepted than reject or the other way around):\n','s');
+                    change = str2double(regexp(str, ',', 'split'));
+                    for iR=1:length(change)
+                        if childUsed(change(iR))
+                            % reject sensors
+                            h.XsDevice_rejectConnection(children{change(iR)});
+                            childUsed(change(iR)) = false;
+                        else
+                            % accept sensors
+                            h.XsDevice_acceptConnection(children{change(iR)});
+                            childUsed(change(iR)) = true;
+                        end
+                    end
+                end
+                % if no device is connected, give error
+                if sum(childUsed) == 0
+                    stopAll
+                    error('MTw:example:devicdes','No devices connected')
+                end
+                % if sensors are rejected or accepted check blinking leds again
+                if ~isempty(change)
+                    input('\n When sensors are connected (synced leds), press enter... \n');
+                end
             end
-            % If no device is connected, give error
-            if sum(childUsed) == 0
-                stopAll
-                error('MTw:example:devicdes','No devices connected')
-            end
-            % If sensors are rejected or accepted check blinking leds again
-            if ~isempty(change)
-                input('\n When sensors are connected (synced leds), press enter... \n');
-            end
+            devicesUsed = children(childUsed);
+            devIdUsed = devIdAll(childUsed);
+            nDevs = sum(childUsed);
         end
-        devicesUsed = children(childUsed);
-        devIdUsed = devIdAll(childUsed);
-        nDevs = sum(childUsed);
     end
-end
-
-% Callback function for handling incoming data
-function tcpipServerCallback(~, ~)
-    % Retrieve the TCP/IP object from the global variable
-    global tcpipServerObject;
     
-    % Read the incoming data
-    data = fread(tcpipServerObject, tcpipServerObject.BytesAvailable);
+    %% Helper function to create figure for display
+    function [t, dataPlot, linePlot, packetCounter] = createFigForDisplay(nDevs, deviceIds)
     
-    % Process the data as needed
-    % For example, you can print the received data
-    disp(['Received data: ' char(data')]);
-end
+            [dataPlot{1:nDevs}] = deal([]);
+            [linePlot{1:nDevs}] = deal([]);
+            [t{1:nDevs}] = deal([]);
+    
+            %% not more than 6 devices per plot
+            nFigs = ceil(nDevs/6);
+            devPerFig = ceil(nDevs/nFigs);
+            m = ceil(sqrt(devPerFig));
+            n = ceil(devPerFig/m);
+            lDev = 0;
+            for iFig=1:nFigs
+                figure('name',['Example MTw_' num2str(iFig)])
+                iPlot = 0;
+                for iDev = lDev+1:min(iFig*devPerFig, nDevs)
+                    iPlot = iPlot+1;
+                    ax = subplot(m,n,iPlot);
+                    linePlot{iDev} = plot(ax, 0,[NaN NaN NaN]);
+                    title(['Orientation data ' deviceIds{iDev}]), xlabel('sample'), ylabel('euler (deg)')
+                    legend(ax, 'roll','pitch','yaw');
+                end
+                lDev = iDev;
+            end
+            packetCounter = zeros(nDevs,1);
+        end
+    
