@@ -1,4 +1,4 @@
-function [t,dataPlot] = xsens_windows
+function [t,oriC] = xsens_windows
     %% Launching activex server
         switch computer
             case 'PCWIN'

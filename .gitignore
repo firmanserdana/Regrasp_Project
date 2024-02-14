@@ -19,6 +19,8 @@ Regrasp_2nd_Python/__pycache__/
 
 # Ignore MATLAB Simulink model files
 *.slx
+*.mtb
+*.log
 
 # Ignore MATLAB Simulink state files
 *.states

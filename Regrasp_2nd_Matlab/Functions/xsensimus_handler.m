@@ -1,4 +1,4 @@
-function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, port, reset_interval)
+function [time_data, roll_data, pitch_data, yaw_data, dataPlot] = xsensimus_handler(host, port, reset_interval)
     if isunix
         % Code to run on Linux platform
         % Create a TCP connection to the server
@@ -96,9 +96,7 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
         while true
             [t,dataPlot] = xsens_windows();
             time_data = [time_data; t{1,1}(1,:)];
-            roll_data = dataPlot{1,1}(1,:);
-            pitch_data = dataPlot{1,1}(2,:);
-            yaw_data = dataPlot{1,1}(3,:);
+            dataPlot = dataPlot;
             if ~isempty(time_data)
                 break;
             end
@@ -106,6 +104,7 @@ function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, 
                 time_data = [];
                 dataPlot = [];
             end
+            plot(roll_data)
         end
     else
         disp('Platform not supported')
