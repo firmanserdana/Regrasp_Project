@@ -306,11 +306,9 @@ function xsens_windows(host, port)
             end
 
             function tcpServer = createTcpServer(host, port)
-            if port.isstring
-                port = str2numeric(port);
-            end
+            port = round(str2double(port));
+            disp(['Server is waiting to be connected at ' host ':' num2str(port)]);
             tcpServer = tcpip(host, port, 'NetworkRole', 'server');
             set(tcpServer, 'Timeout', 30);
             fopen(tcpServer);
-            disp('Server is waiting to be connected at' + host + ':' + port);
             end
