@@ -139,7 +139,7 @@ function xsens_windows(host, port)
                 % start recording
                 h.XsDevice_startRecording(device);
                 tcpServer = createTcpServer(host, port);
-                if tcpServer.connected
+                if tcpServer.Connected
                     fprintf('\n Server connected \n');
                 end
                 % register onLiveDataAvailable event
@@ -168,7 +168,7 @@ function xsens_windows(host, port)
                 if dataPacket
                     if h.XsDataPacket_containsOrientation(dataPacket)
                         oriC = cell2mat(h.XsDataPacket_orientationEuler_1(dataPacket));
-                        tcpServer.write(oriC(1) + "," + oriC(2) + "," + oriC(3) + "\n");
+                        tcpServer.writeline(oriC(1) + "," + oriC(2) + "," + oriC(3));
                         packetCounter(iDev) = packetCounter(iDev) + 1;
                         dataPlot{iDev} = [dataPlot{iDev} oriC];
                     end
@@ -192,7 +192,7 @@ function xsens_windows(host, port)
 
             function stopAll
                 % close everything in the right way
-                if ~isempty(h.eventlisteners) || isempty(tcpServer.connected)
+                if ~isempty(h.eventlisteners) || isempty(tcpServer.Connected)
                     h.unregisterevent({'onLiveDataAvailable', @handleData});
                     h.setCallbackOption(h.XsComCallbackOptions_XSC_None, h.XsComCallbackOptions_XSC_LivePacket);
                 end
@@ -308,7 +308,7 @@ function xsens_windows(host, port)
             function tcpServer = createTcpServer(host, port)
             port = round(str2double(port));
             disp(['Server is waiting to be connected at ' host ':' num2str(port)]);
-            tcpServer = tcpip(host, port, 'NetworkRole', 'server');
+            tcpServer = tcpserver(host, port);
             set(tcpServer, 'Timeout', 30);
             fopen(tcpServer);
             end
