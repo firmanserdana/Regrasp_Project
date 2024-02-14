@@ -1,4 +1,4 @@
-function [t,oriC] = xsens_windows
+function xsens_windows(host, port)
     %% Launching activex server
         switch computer
             case 'PCWIN'
@@ -83,8 +83,8 @@ function [t,oriC] = xsens_windows
                 fprintf(' Radio is still turned on, remove device from pc and try again')
             end % if radio is still on, this call will give an error
             
-            input('\n Undock the MTw devices from the Awinda station and wait until the devices are connected (synced leds), then press enter... \n');
-            
+            %input('\n Undock the MTw devices from the Awinda station and wait until the devices are connected (synced leds), then press enter... \n');
+            pause(5); % wait for radio to be enabled
             % check which devices are found
             children = h.XsDevice_children(device);
     
@@ -136,6 +136,10 @@ function [t,oriC] = xsens_windows
         if output
             % start recording
             h.XsDevice_startRecording(device);
+            tcpServer = createTcpServer(host, port);
+            if tcpServer.connected
+                fprintf('\n Server connected \n');
+            end
             % register onLiveDataAvailable event
             h.registerevent({'onLiveDataAvailable',@handleData});
             h.setCallbackOption(h.XsComCallbackOptions_XSC_LivePacket, h.XsComCallbackOptions_XSC_None);
@@ -162,6 +166,7 @@ function [t,oriC] = xsens_windows
             if dataPacket
                 if h.XsDataPacket_containsOrientation(dataPacket)
                     oriC = cell2mat(h.XsDataPacket_orientationEuler_1(dataPacket));
+                    tcpServer.write(oriC(1) + "," + oriC(2) + "," + oriC(3) + "\n");
                     packetCounter(iDev) = packetCounter(iDev)+1;
                     dataPlot{iDev} = [dataPlot{iDev} oriC];
                 end
@@ -185,9 +190,9 @@ function [t,oriC] = xsens_windows
     
         function stopAll
             % close everything in the right way
-            if ~isempty(h.eventlisteners)
+            if ~isempty(h.eventlisteners) || isempty(tcpServer.connected)
                 h.unregisterevent({'onLiveDataAvailable',@handleData});
-            h.setCallbackOption(h.XsComCallbackOptions_XSC_None, h.XsComCallbackOptions_XSC_LivePacket);
+                h.setCallbackOption(h.XsComCallbackOptions_XSC_None, h.XsComCallbackOptions_XSC_LivePacket);
             end
             % stop recording, showing data
             fprintf('\n Stop recording, go to config mode \n');
@@ -297,4 +302,12 @@ function [t,oriC] = xsens_windows
             end
             packetCounter = zeros(nDevs,1);
         end
+
+function tcpServer = createTcpServer(host, port)
+    tcpServer = tcpip(host, port, 'NetworkRole', 'server');
+    set(tcpServer, 'Timeout', 30);
+    fopen(tcpServer);
+    disp('Server is waiting to be connected at' + host + ':' + port);
+end
+        
     

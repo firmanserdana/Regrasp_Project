@@ -1,112 +1,106 @@
-function [time_data, roll_data, pitch_data, yaw_data, dataPlot] = xsensimus_handler(host, port, reset_interval)
+function [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler(host, port, reset_interval)
     if isunix
         % Code to run on Linux platform
-        % Create a TCP connection to the server
-        tcp_client = tcpclient(host, port);
-
         try
-            % Plot initialization (assuming roll, pitch, yaw data will be plotted)
-            % figure;
-            % xlabel('Time');
-            % ylabel('Angle (degrees)');
-            % title('Sensor Data');
-            % grid on;
-
-            % Initialize arrays to store sensor data
-            time_data = []; % Time stamps
-            roll_data = []; % Roll values
-            pitch_data = []; % Pitch values
-            yaw_data = []; % Yaw values
-
-            % Initialize time counter for data reset
-            data_counter = 0;
-
-            % Read and plot sensor data from the TCP server
-            while true
-                % Read a line of data from the TCP server
-                data = readline(tcp_client);
-
-                % Check if the end of file is reached
-                if isempty(data)
-                    break;
-                end
-
-                % Split the received data into roll, pitch, and yaw values
-                sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
-
-                % Check for NaN values and skip them
-                if any(isnan(sensor_data))
-                    continue;
-                end
-
-                % Extract roll, pitch, and yaw values
-                roll = sensor_data(1);
-                pitch = sensor_data(2);
-                yaw = sensor_data(3);
-
-                % Record time stamp
-                time_stamp = datetime('now');
-
-                % Append data to arrays
-                time_data = [time_data; time_stamp];
-                roll_data = [roll_data; roll];
-                pitch_data = [pitch_data; pitch];
-                yaw_data = [yaw_data; yaw];
-
-                % Plot the data
-                % plot(time_data, roll_data, 'r-', time_data, pitch_data, 'g-', time_data, yaw_data, 'b-');
-                % legend('Roll', 'Pitch', 'Yaw');
-                % drawnow;
-
-                % Increment data counter
-                data_counter = data_counter + 1;
-
-                % Reset data after a certain number of data points
-                if data_counter >= reset_interval
-                    % Close the current TCP connection
-                    fclose(tcp_client);
-
-                    % Create a new TCP connection
-                    tcp_client = tcpclient(host, port);
-
-                    % Reset data arrays
-                    time_data = [];
-                    roll_data = [];
-                    pitch_data = [];
-                    yaw_data = [];
-                    data_counter = 0;
-                end
-            end
-
-            % Close the TCP connection
-            fclose(tcp_client);
-
-        catch e
-            % Handle errors
-            disp(['Error: ' e.message]);
+            % Start the Xsens IMU data acquisition
+            system('sudo py -3.8 Regrasp_2nd_Matlab/Functions/xsens_linux.py');
+        catch
+            disp('Error: Xsens IMU data acquisition failed');
         end
-
+        [time_data, roll_data, pitch_data, yaw_data] = receiveData(host, port, reset_interval);
     elseif ispc
         % Code to run on Windows platform
-         % Initialize arrays to store sensor data
-            time_data = []; % Time stamps
-            roll_data = []; % Roll values
-            pitch_data = []; % Pitch values
-            yaw_data = []; % Yaw values
+        pool = gcp('nocreate');
+        xsens_windows_background = parfeval(pool, @xsens_windows, 0, host, port);
+        [time_data, roll_data, pitch_data, yaw_data] = receiveData(host, port, reset_interval);
+    else
+        disp('Platform not supported') 
+    end
+
+    function [time_data, roll_data, pitch_data, yaw_data] = receiveData(host, port, reset_interval)
+            % Create a TCP connection to the server
+    tcp_client = tcpclient(host, port);
+
+    try
+        % Plot initialization (assuming roll, pitch, yaw data will be plotted)
+        % figure;
+        % xlabel('Time');
+        % ylabel('Angle (degrees)');
+        % title('Sensor Data');
+        % grid on;
+
+        % Initialize arrays to store sensor data
+        time_data = []; % Time stamps
+        roll_data = []; % Roll values
+        pitch_data = []; % Pitch values
+        yaw_data = []; % Yaw values
+
+        % Initialize time counter for data reset
+        data_counter = 0;
+
+        % Read and plot sensor data from the TCP server
         while true
-            [t,dataPlot] = xsens_windows();
-            time_data = [time_data; t{1,1}(1,:)];
-            dataPlot = dataPlot;
-            if ~isempty(time_data)
+            % Read a line of data from the TCP server
+            data = readline(tcp_client);
+
+            % Check if the end of file is reached
+            if isempty(data)
                 break;
             end
-            if numel(time_data) >= reset_interval
-                time_data = [];
-                dataPlot = [];
+
+            % Split the received data into roll, pitch, and yaw values
+            sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
+
+            % Check for NaN values and skip them
+            if any(isnan(sensor_data))
+                continue;
             end
-            plot(roll_data)
+
+            % Extract roll, pitch, and yaw values
+            roll = sensor_data(1);
+            pitch = sensor_data(2);
+            yaw = sensor_data(3);
+
+            % Record time stamp
+            time_stamp = datetime('now');
+
+            % Append data to arrays
+            time_data = [time_data; time_stamp];
+            roll_data = [roll_data; roll];
+            pitch_data = [pitch_data; pitch];
+            yaw_data = [yaw_data; yaw];
+
+            % Plot the data
+            % plot(time_data, roll_data, 'r-', time_data, pitch_data, 'g-', time_data, yaw_data, 'b-');
+            % legend('Roll', 'Pitch', 'Yaw');
+            % drawnow;
+
+            % Increment data counter
+            data_counter = data_counter + 1;
+
+            % Reset data after a certain number of data points
+            if data_counter >= reset_interval
+                % Close the current TCP connection
+                fclose(tcp_client);
+
+                % Create a new TCP connection
+                tcp_client = tcpclient(host, port);
+
+                % Reset data arrays
+                time_data = [];
+                roll_data = [];
+                pitch_data = [];
+                yaw_data = [];
+                data_counter = 0;
+            end
         end
-    else
-        disp('Platform not supported')
+
+        % Close the TCP connection
+        fclose(tcp_client);
+
+    catch e
+        % Handle errors
+        disp(['Error: ' e.message]);
+    end
     end
 end
