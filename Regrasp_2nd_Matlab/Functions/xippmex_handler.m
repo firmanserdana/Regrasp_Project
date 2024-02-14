@@ -1,4 +1,4 @@
-classdef xippmex_handler_v1
+classdef xippmex_handler
 
     methods(Static)
 
@@ -33,8 +33,10 @@ classdef xippmex_handler_v1
             % Initialize stimulation command (AMP and FREQ = 0 for all chs)
             stimCmd = struct([]);
 
-            for iCh = stimChsID
-                stimCmd(iCh).repeats = vars.repeats; % # repetitions of stim command (the highest possible to be continuous)
+            for iCh = 1:length(stimChsID)
+                stimCmd(iCh).elec = stimChsID(iCh);
+                stimCmd(iCh).period = floor(1000 / vars.baseFreq * vars.msec2nip_clk); % baseline Freq [clock cycles]
+                stimCmd(iCh).repeats = vars.baseFreq; % # repetitions of stim cmd (we set it so that the cmd is repetead for 1 sec)
                 stimCmd(iCh).action = vars.action; % when we want the stim command to be processed (immediately)
                 stimCmd(iCh).seq(1) = struct('length', 1, 'ampl', 0, 'pol', 0, 'fs', 0, ...
                     'enable', 1, 'delay', 0, 'ampSelect', vars.AMP_STIM); % cathodic phase of stim
@@ -51,7 +53,7 @@ classdef xippmex_handler_v1
             end
 
             % Command clear to use for not used chs
-            cmdClear = stimCmd;
+            cmdClear = stimCmd(1);
             
         end
 
@@ -106,18 +108,18 @@ classdef xippmex_handler_v1
                 end
 
                 if varsGUI.modType == 1 % AM
-                    stimAmp = (varsGUI.ampMax(graspIdx) - varsGUI.ampMin(graspIdx))/...
+                    stimAmp = (varsGUI.maxAmp(graspIdx) - varsGUI.minAmp(graspIdx))/...
                         (varsGUI.propSat - varsGUI.propThr) * propCmd;
                     stimFreq = varsGUI.stimFreq(graspIdx);
                 elseif varsGUI.modType == 2 % FM
-                    stimFreq = (varsGUI.freqMax(graspIdx) - varsGUI.freqMin(graspIdx))/...
+                    stimFreq = (varsGUI.maxFreq(graspIdx) - varsGUI.minFreq(graspIdx))/...
                         (varsGUI.propSat - varsGUI.propThr) * propCmd;
                     stimAmp = varsGUI.stimAmp(graspIdx);
                 end
 
             else
                 stimAmp = 0;
-                stimFreq = 0;
+                stimFreq = 1;
             end
         end
 
@@ -147,7 +149,7 @@ classdef xippmex_handler_v1
 
 
         %% Send stimulation command
-        function sendStimCmd(stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars)
+        function sendStimCmd(obj, stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars)
 
             % CHECK THAT STIM DOES NOT EXCEED SAFETY LIMITS!!!!!!!!!!!
             if stimPW*stimAmp>vars.safeLimit
@@ -162,19 +164,27 @@ classdef xippmex_handler_v1
             stimFreq_cycles = floor(1000 / stimFreq * vars.msec2nip_clk); % [clock cycles]
 
             % Create stim command for selected stimCh
-            stimCmd(stimChsID(stimCh)).seq(1).length = stimPW_cycles; % PW cathodic phase
-            stimCmd(stimChsID(stimCh)).seq(3).length = stimPW_cycles; % PW anodic phase
+            stimCmd(stimCh).seq(1).length = stimPW_cycles; % PW cathodic phase
+            stimCmd(stimCh).seq(3).length = stimPW_cycles; % PW anodic phase
 
-            stimCmd(stimChsID(stimCh)).seq(1).ampl = stimAmp_steps; % AMP cathodic phase
-            stimCmd(stimChsID(stimCh)).seq(3).ampl = stimAmp_steps; % AMP anodic phase
+            stimCmd(stimCh).seq(1).ampl = stimAmp_steps; % AMP cathodic phase
+            stimCmd(stimCh).seq(3).ampl = stimAmp_steps; % AMP anodic phase
 
-            stimCmd(stimChsID(stimCh)).period = stimFreq_cycles; % FREQ
+            stimCmd(stimCh).period = stimFreq_cycles; % FREQ
+            stimCmd(stimCh).repeats = stimFreq; % # repetitions of stim cmd (we set it so that the cmd is repetead for 1 sec)
 
             % Clear stim command for other stimChs (AMP and FREQ = 0)
-            stimCmd(stimChsID(find(stimChsID~=stimCh))) = cmdClear;
+            otherChs = find([1:length(stimChsID)]~=stimCh);
+            for iC = otherChs
+                stimCmd(iC) = cmdClear;
+            end
 
             % Send stim command
-            xippmex('stimseq', stimCmd);
+            try
+                xippmex('stimseq', stimCmd);               
+            catch
+                disp('Error in the stim command')
+            end
         end
 
     end

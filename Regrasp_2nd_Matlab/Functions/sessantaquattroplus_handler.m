@@ -1,4 +1,4 @@
-classdef sessantaquattroplus_handler_v1
+classdef sessantaquattroplus_handler
 
     methods(Static)
 
@@ -8,7 +8,7 @@ classdef sessantaquattroplus_handler_v1
             t = tcpip('0.0.0.0', 45454, 'NetworkRole', 'server');
             t.InputBufferSize = 500000;
             fopen(t);
-            disp('Connected to the 64+');
+            disp('64+ connected');
 
         end
 
@@ -79,6 +79,10 @@ classdef sessantaquattroplus_handler_v1
 
             % Conversion factor for the bioelectrical signals to get the values in mV
             data = data*vars.ConvFact;
+            
+            % Filter EMG
+            data = filtfilt(vars.bNotch,vars.aNotch,data); % Notch at 50 Hz
+            data = filtfilt(vars.bBandPass,vars.aBandPass,data); % Band-pass 
 
             % Write data into buffer
             write(bufData, data);

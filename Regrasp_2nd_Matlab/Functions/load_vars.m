@@ -1,3 +1,5 @@
+% -------------------------- Fixed parameters -----------------------------
+
 % SAFETY LIMIT
 vars.safeLimit = 0.12; % [pC]
 
@@ -5,7 +7,7 @@ vars.safeLimit = 0.12; % [pC]
 vars.nipClock_us = 1e6/3e4; % 33.333 us
 vars.msec2nip_clk   = 30;
 vars.AMP_STIM = 1; % used to set the input channel amp to measure stim voltage
-vars.repeats = 4095; % # times the stim cmd will be repeated. 4095 is the max value (stim will be continuous)
+vars.baseFreq = 1; % [Hz] baseline frequency (we set it at 1 Hz)
 vars.action = 'immed'; % The command will be processed as soon as the NIP receives it
 vars.fs_us = 200;    % duration of stim fast settle of recording (us)
 vars.ampStepSize = 7.5; % [uA]
@@ -27,3 +29,9 @@ vars.ConvFact = 0.000286; % Conversion factor for the bioelectrical signals to g
 vars.EMGchC = 1; % selected EMG control channel
 vars.readWind = 0.08; % [s]
 vars.bufWind = 0.24; % [s]
+[vars.bNotch,vars.aNotch] = butter(3,[49 51]/(vars.FSAMP*1000),'stop');
+[vars.bBandPass,vars.aBandPass] = butter(3,[10 500]/(vars.FSAMP*1000),'bandpass');
+
+
+% Plot 
+vars.plotTimeSpan = 5; % [s]

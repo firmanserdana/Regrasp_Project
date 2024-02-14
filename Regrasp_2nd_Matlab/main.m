@@ -2,7 +2,7 @@ clear all
 close all
 clc
 
-addpath(genpath('Regrasp_Dependency'))
+addpath(genpath(pwd))
 
 
 %% Parameters
@@ -19,24 +19,28 @@ load_varsGUI;
 
 
 %% Connect with binary control device
-if vars_GUI.binDevice==1 % Pillow
+if varsGUI.binDevice==1 % Pillow
 
     s = pillowbutton_handler.openSerial();
 
-elseif vars_GUI.binDevice==2 % eeg
+elseif varsGUI.binDevice==2 % eeg
 
 end
 
 
 %% Connect with proportional control device
-if vars_GUI.propDevice==1 % 64+
+if varsGUI.propDevice==1 % 64+
 
     t = sessantaquattroplus_handler.openSocket();
     [nEMGchs,EMGsFreq,blockData,bufData] = sessantaquattroplus_handler.configure(t, vars);
 
-elseif vars_GUI.propDevice==2 % MTw Awinda
+elseif varsGUI.propDevice==2 % MTw Awinda
 
 end
+
+
+%% Initialize plot
+[figStreams, binCmdLine, propCmdLine, stimLine] = plot_handler.initializePlot(vars);
 
 
 %% Control loop (to start when I press the start stim button on the GUI)
@@ -46,34 +50,36 @@ stimCh = varsGUI.stimCh(graspIdx);
 stimPW = varsGUI.stimPW(graspIdx);
 stimAmp = varsGUI.stimAmp(graspIdx);
 stimFreq = varsGUI.stimFreq(graspIdx);
-buttonState = 0;
-buttonState_pre = 0;
+binCmd = 0;
+binCmd_pre = 0;
+ccPlot = 0;
 
 % Enable stim
 xippmex_handler.enableStim();
 
 % GO
-if vars_GUI.propDevice==1 % 64+
+if varsGUI.propDevice==1 % 64+
 
     while(varsGUI.stimEN)
 
         % -------------------- BINARY CONTROL -----------------------------
-        buttonState = pillowbutton_handler.readButtonState(s);
+        binCmd = pillowbutton_handler.readButtonState(s);
 
-        % Check if the state of the button has changed from 0 to 1
-        if buttonState_pre==0 & buttonState==1
+        if binCmd==1
+
+            disp('SWITCH')
 
             % Change the grasp type
             [graspIdx, stimCh, stimPW] = xippmex_handler.switchStim(graspIdx, varsGUI);
-            
+
             % Check if NIP is connected
             [nipOffTime, lastNipTime] = xippmex_handler.checkNIP(nipOffTime, lastNipTime);
-            
+
             % Send stimulation cmd
-            xippmex_handler.sendStimCmd(stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars);
+            xippmex_handler.sendStimCmd(xippmex_handler, stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars);
         end
-        
-        buttonState_pre = buttonState;
+
+        binCmd_pre = binCmd;
         % -----------------------------------------------------------------
 
 
@@ -91,7 +97,16 @@ if vars_GUI.propDevice==1 % 64+
         [nipOffTime, lastNipTime] = xippmex_handler.checkNIP(nipOffTime, lastNipTime);
 
         % Send stimulation cmd
-        xippmex_handler.sendStimCmd(stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars);
+        xippmex_handler.sendStimCmd(xippmex_handler, stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars);
+        % -----------------------------------------------------------------
+
+
+        % ----------------------------- PLOT ------------------------------
+        ccPlot = ccPlot + 1;
+
+        plot_handler.plotBinCmd(figStreams, binCmdLine, binCmd, ccPlot);
+        plot_handler.plotPropCmd(figStreams, propCmdLine, propCmd, ccPlot)
+        plot_handler.plotStimVar(figStreams, stimLine, stimAmp, stimFreq, varsGUI, ccPlot)
         % -----------------------------------------------------------------
 
     end
@@ -103,7 +118,7 @@ if vars_GUI.propDevice==1 % 64+
     sessantaquattroplus_handler.closeSocket();
 
 
-elseif vars_GUI.propDevice==2 % MTw Awinda
+elseif varsGUI.propDevice==2 % MTw Awinda
 
     while(varsGUI.stimEN)
 
