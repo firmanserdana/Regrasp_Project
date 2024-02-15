@@ -15,7 +15,7 @@ classdef xsensimus_handler
             elseif ispc
                 % Code to run on Windows platform
                 try
-                    commandStr = 'matlab -nosplash -nodesktop -r "run(''xsens_windows('+host+','+port+')''); exit;"';
+                    commandStr = ['matlab -nosplash -nodesktop -r "run(''xsens_windows(''' host ''',''' port ''')''); exit;"'];
                     system(commandStr);
                 catch
                     disp('Error: Xsens IMU data acquisition failed');
