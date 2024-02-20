@@ -27,45 +27,55 @@ classdef xsensimus_handler
 
         function [time_data, roll_data, pitch_data, yaw_data] = receiveData(tcp_client)
             try
-
                 % Initialize arrays to store sensor data
                 time_data = []; % Time stamps
                 roll_data = []; % Roll values
                 pitch_data = []; % Pitch values
                 yaw_data = []; % Yaw values
-                    % Read a line of data from the TCP server
-                    data = readline(tcp_client);
 
-                    % Split the received data into roll, pitch, and yaw values
-                    sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
+                % Read a line of data from the TCP server
+                data = readline(tcp_client);
 
-                    % Extract roll, pitch, and yaw values
-                    roll = sensor_data(1);
-                    pitch = sensor_data(2);
-                    yaw = sensor_data(3);
+                % Split the received data into roll, pitch, and yaw values
+                sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
 
-                    % Record time stamp
-                    time_stamp = datetime('now');
+                % Extract roll, pitch, and yaw values
+                roll = sensor_data(1);
+                pitch = sensor_data(2);
+                yaw = sensor_data(3);
 
-                    % Append data to arrays
-                    time_data = [time_data; time_stamp];
-                    roll_data = [roll_data; roll];
-                    pitch_data = [pitch_data; pitch];
-                    yaw_data = [yaw_data; yaw];
+                % Record time stamp
+                time_stamp = datetime('now');
+
+                % Append data to arrays
+                time_data = [time_data; time_stamp];
+                roll_data = [roll_data; roll];
+                pitch_data = [pitch_data; pitch];
+                yaw_data = [yaw_data; yaw];
             catch e
                 % Handle errors
                 disp(['Error: ' e.message]);
             end
         end
 
-        function tcp_client = connect(host, port)
-        try
-            % Create a TCP connection to the server
-            tcp_client = tcpclient(host, port);
-        catch e
-            % Handle errors
-            disp(['Error: ' e.message]);
+        function displacement = calculateDisplacement(roll_data, pitch_data, yaw_data)
+            % Calculate displacement based on the first static state
+            initial_roll = roll_data(1);
+            initial_pitch = pitch_data(1);
+            initial_yaw = yaw_data(1);
+
+            % Calculate displacement using trigonometry
+            displacement = sqrt((roll_data - initial_roll).^2 + (pitch_data - initial_pitch).^2 + (yaw_data - initial_yaw).^2);
         end
+        
+        function tcp_client = connect(host, port)
+            try
+                % Create a TCP connection to the server
+                tcp_client = tcpclient(host, port);
+            catch e
+                % Handle errors
+                disp(['Error: ' e.message]);
+            end
         end
 
         function disconnect(t)

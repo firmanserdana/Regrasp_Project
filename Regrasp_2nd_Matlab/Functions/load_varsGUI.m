@@ -1,6 +1,6 @@
 % Control parameters 
 varsGUI.binDevice = 1; % 1 for Pillow, 2 for eeg
-varsGUI.propDevice = 1; % 1 for 64+, 2 for MTw Awinda
+varsGUI.propDevice = 2; % 1 for 64+, 2 for MTw Awinda
 varsGUI.propThr = 0.3; % between 0 and 1
 varsGUI.propSat = 0.7; % between 0 and 1 (propSat > propThr)
 
