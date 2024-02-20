@@ -1,49 +1,132 @@
-close all;
-fclose('all');
-clc;
-clear;
+clear all
+close all
+clc
 
-try
-    addpath(genpath('Regrasp_2nd_Matlab/Regrasp_Dependency'))
-catch
-    disp('Download Xippmex and add it to the path (Regrasp_Dependency/Xippmex) to use the Xippmex functions')
+addpath(genpath(pwd))
+
+
+%% Parameters
+% Fixed parameters
+load_vars;
+
+% GUI parameters
+load_varsGUI;
+
+
+%% Connect with stimulator and setup stimulation
+[nipOffTime, lastNipTime] = xippmex_handler.initializeNIP();
+[stimChsID, stimCmd, cmdClear] = xippmex_handler.setupStim(vars);
+
+
+%% Connect with binary control device
+if varsGUI.binDevice==1 % Pillow
+
+    s = pillowbutton_handler.openSerial();
+
+elseif varsGUI.binDevice==2 % eeg
+
 end
 
-addpath(genpath('Regrasp_2nd_Matlab/Functions'))
 
-vars = default_init_values('AM');
+%% Connect with proportional control device
+if varsGUI.propDevice==1 % 64+
 
+    t = sessantaquattroplus_handler.openSocket();
+    [nEMGchs,EMGsFreq,blockData,bufData] = sessantaquattroplus_handler.configure(t, vars);
 
-sessantaquattroplus_handler = sessantaquattroplus_handler();
-t = sessantaquattroplus_handler.openSocket();
-[numChannels,sampFreq,bufData] = sessantaquattroplus_handler.configure(t, vars.GO, vars.REC, vars.TRIG, vars.EXTEN, vars.HPF, vars.HRES, vars.MODE, vars.NCH, vars.FSAMP, vars.bufWind);
+elseif varsGUI.propDevice==2 % MTw Awinda
 
-
-xippmex_handler = xippmex_handler();
-xippmex_handler.statusNIP();
-xippmex_handler.setupStimulation();
-[cmd, cmdClear] = xippmex_handler.initializeStimulation(vars.stimChans, vars.cs, vars.phaseDur_us, vars.fs_us, vars.stimFreq, vars.pulseAmpSteps, vars.nipClock_us, vars.nip_clk2sec, vars.AMP_STIM, vars.AMP_NEURAL);
-
-figure;  % Create a new figure window for the plot
-subplot(2, 1, 1);  % Create the first subplot for data
-hData = plot(1);  % Plot the data
-title('EMG Data');
-
-subplot(2, 1, 2);  % Create the second subplot for stimulation signals
-hStim = plot(1);  % Plot the stimulation signals
-title('Stimulation Signals');
-
-while true
-    data = sessantaquattroplus_handler().receiveData(t, vars.HRES, numChannels, sampFreq, vars.readWind);
-    [dataNorm,dataEnv] = sessantaquattroplus_handler().processData(data,vars.MVC,vars.chX,bufData);
-    ampRngFrac = xippmex_handler().runStimulationLoop(dataEnv, bufData, vars.stimChans, vars.cs, vars.env_thr, vars.forceRange_mV, vars.MVC, vars.nipClock_us, vars.msec2nip_clk, vars.AMP_STIM, cmd, cmdClear);
-    % Update the data plot
-    set(hData, 'YData', dataNorm);
-    % Update the stimulation signals plot
-    set(hStim, 'YData', ampRngFrac);
-    
-    drawnow;  % Update the plot immediately
-    
-    % Add any additional code or conditions for the loop termination
-    
 end
+
+
+%% Initialize plot
+[figStreams, binCmdLine, propCmdLine, stimLine] = plot_handler.initializePlot(vars);
+
+
+%% Control loop (to start when I press the start stim button on the GUI)
+% Initialization of stimulation parameters
+graspIdx = 1;
+stimCh = varsGUI.stimCh(graspIdx);
+stimPW = varsGUI.stimPW(graspIdx);
+stimAmp = varsGUI.stimAmp(graspIdx);
+stimFreq = varsGUI.stimFreq(graspIdx);
+binCmd = 0;
+binCmd_pre = 0;
+ccPlot = 0;
+
+% Enable stim
+xippmex_handler.enableStim();
+
+% GO
+if varsGUI.propDevice==1 % 64+
+
+    while(varsGUI.stimEN)
+
+        % -------------------- BINARY CONTROL -----------------------------
+        binCmd = pillowbutton_handler.readButtonState(s);
+
+        if binCmd==1
+
+            disp('SWITCH')
+
+            % Change the grasp type
+            [graspIdx, stimCh, stimPW] = xippmex_handler.switchStim(graspIdx, varsGUI);
+
+            % Check if NIP is connected
+            [nipOffTime, lastNipTime] = xippmex_handler.checkNIP(nipOffTime, lastNipTime);
+
+            % Send stimulation cmd
+            xippmex_handler.sendStimCmd(xippmex_handler, stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars);
+        end
+
+        binCmd_pre = binCmd;
+        % -----------------------------------------------------------------
+
+
+        % -------------------- PROPORTIONAL CONTROL -----------------------
+        % Read EMG data
+        data = sessantaquattroplus_handler.receiveData(t, blockData, vars, nEMGchs, EMGsFreq);
+
+        % Process EMG data to compute the proportional cmd
+        [propCmd, dataNorm] = sessantaquattroplus_handler.processData(data, vars, varsGUI, bufData);
+
+        % Compute stimulation output based on proportional cmd
+        [stimAmp, stimFreq] = xippmex_handler.stimOutput(propCmd, varsGUI, graspIdx);
+
+        % Check if NIP is connected
+        [nipOffTime, lastNipTime] = xippmex_handler.checkNIP(nipOffTime, lastNipTime);
+
+        % Send stimulation cmd
+        xippmex_handler.sendStimCmd(xippmex_handler, stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars);
+        % -----------------------------------------------------------------
+
+
+        % ----------------------------- PLOT ------------------------------
+        ccPlot = ccPlot + 1;
+
+        plot_handler.plotBinCmd(figStreams, binCmdLine, binCmd, ccPlot);
+        plot_handler.plotPropCmd(figStreams, propCmdLine, propCmd, ccPlot)
+        plot_handler.plotStimVar(figStreams, stimLine, stimAmp, stimFreq, varsGUI, ccPlot)
+        % -----------------------------------------------------------------
+
+    end
+
+    % Disable stim
+    xippmex_handler.disableStim();
+
+    % Close 64+ TCP socket
+    sessantaquattroplus_handler.closeSocket();
+
+
+elseif varsGUI.propDevice==2 % MTw Awinda
+
+    while(varsGUI.stimEN)
+
+
+
+    end
+
+    % Disable stim
+    xippmex_handler.disableStim();
+end
+

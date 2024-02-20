@@ -1,203 +1,192 @@
 classdef xippmex_handler
+
     methods(Static)
-        function statusNIP()
-            %% Start NIP
-            status = 0;
-            try
-                status = xippmex;
-                while ~status
-                    status = xippmex;
-                end
-                disp('NIP is online.');
-            catch
-                disp(["Could not find NIP."; "Check wired connection and open Trellis app."]);
-                % delete(app);
+
+
+        %% Initialize NIP
+        function [nipOffTime, lastNipTime] = initializeNIP()
+
+            status = xippmex;
+
+            if status == 1
+                disp('NIP connected')
+            else
+                error('Xippmex Did Not Initialize'); 
             end
-            % END: ed8c6549bwf9
+
+            lastNipTime = 0;
+            nipOffTime = 0;
         end
 
-        function setupStimulation()
-            %% Find all Stim and Micro/Nano channels and Corresponding FE's
-            stimChans  = xippmex('elec','stim');
-            %make sure there is at least one micro+stim front end present
-            if isempty(stimChans)
+
+        %% Setup stimulation
+        function [stimChsID, stimCmd, cmdClear] = setupStim(vars)
+
+            % Find all Stim and Micro/Nano channels and Corresponding FE's
+            stimChsID = xippmex('elec','stim');
+
+            % Make sure there is at least one Micro+stim FE present
+            if isempty(stimChsID)
                 error('No stimulation hardware detected');
             end
 
-            stimChans = stimChans(1);   % for demonstration purposes, I write the code
-            % for a single channel, but in the app I can choose the channel from the available ones
+            % Initialize stimulation command (AMP and FREQ = 0 for all chs)
+            stimCmd = struct([]);
 
-            % Flush stim buffer
-            xippmex('spike',stimChans,1);
-            % the buffer is emptied soon after it's read, so no need to do it manually
+            for iCh = 1:length(stimChsID)
+                stimCmd(iCh).elec = stimChsID(iCh);
+                stimCmd(iCh).period = floor(1000 / vars.baseFreq * vars.msec2nip_clk); % baseline Freq [clock cycles]
+                stimCmd(iCh).repeats = vars.baseFreq; % # repetitions of stim cmd (we set it so that the cmd is repetead for 1 sec)
+                stimCmd(iCh).action = vars.action; % when we want the stim command to be processed (immediately)
+                stimCmd(iCh).seq(1) = struct('length', 1, 'ampl', 0, 'pol', 0, 'fs', 0, ...
+                    'enable', 1, 'delay', 0, 'ampSelect', vars.AMP_STIM); % cathodic phase of stim
+                stimCmd(iCh).seq(2) = struct('length', 1, 'ampl', 0, 'pol', 0, 'fs', 0, ...
+                    'enable', 0, 'delay', 0, 'ampSelect', vars.AMP_STIM); % interphase interval
+                stimCmd(iCh).seq(3) = struct('length', 1, 'ampl', 0, 'pol', 1, 'fs', 0,...
+                    'enable', 1, 'delay', 0, 'ampSelect', vars.AMP_STIM); % anodic phase of stim
 
-            % Activate 'stim' data stream
-            % Note only stim and spike streams are managed individually
-            if ~isempty(stimChans)
-                xippmex('signal',stimChans,'stim',ones(1,length(stimChans)));
+                fs_cycls = floor(vars.fs_us / vars.nipClock_us); % fast settle after stim pulse
+                if fs_cycls > 0
+                    stimCmd(iCh).seq(4) = struct('length', fs_cycls, 'ampl', 0, 'pol', 1, ...
+                        'fs', 1, 'enable', 1, 'delay', 0, 'ampSelect', vars.AMP_STIM);
+                end
             end
 
-            pause(0.5)  % give NIP some time to process the commands sent
+            % Command clear to use for not used chs
+            cmdClear = stimCmd(1);
+            
         end
 
-        function [cmd, cmdClear] = initializeStimulation(stimChans, cs, phaseDur_us, fs_us, stimFreq, pulseAmpSteps, nipClock_us, nip_clk2sec, AMP_STIM, AMP_NEURAL)
-            % Enable stimulation on the NIP.
-            % NOTE: If stimulation is not enabled, xippmex will enable and disable 
-            % stimulation for each stim sequence it receives. This will have the 
-            % undesirable side effect of killing queued stimulation sequences. Always 
+
+        %% Enable stimulation
+        function enableStim()
+
+            % Enable stimulation
+            % NOTE: If stimulation is not enabled, xippmex will enable and disable
+            % stimulation for each stim sequence it receives. This will have the
+            % undesirable side effect of killing queued stimulation sequences. Always
             % enable stimulation on the NIP before queueing multiple stimulation
             % sequences.
-            xippmex('stim', 'enable', 0); 
-            pause(0.5)
-            xippmex('stim', 'enable', 1); 
+            xippmex('stim', 'enable', 1);
             pause(0.5)
 
-            % NOTE: This size is fixed and cannot be exceeded. Overflowing the buffer
-            % will cause the NIP to shut down all stimulation.
-            stimQueueSize = 8;
+        end
 
-            pw_cycls = floor(phaseDur_us / nipClock_us);
-            fs_cycls = floor(fs_us / nipClock_us);
-            cmd = [];
-            cmdClear = [];
 
-            for i = 1:length(stimChans)
-                cmd(i).elec    = stimChans(i);
-                if cs == 1                  % AM
-                    cmd(i).period  = floor(1/nip_clk2sec / stimFreq);
-                elseif cs == 2              % FM
-                    cmd(i).period  = 1;
-                end
-                cmd(i).repeats = 200;
-                cmd(i).action  = 'immed';  % Valid 'action' options are: ['immed', 'curcyc', 'allcyc', 'at-time']
+        %% Disable stimulation
+        function disableStim()
 
-                % Initialize cathodic phase of stim
-                if cs == 1                  % AM
-                    cmd(i).seq(1) = struct('length', pw_cycls, 'ampl', 0, 'pol', 0, ...
-                        'fs', 0, 'enable', 1, 'delay', 0, 'ampSelect', AMP_STIM);
-                elseif cs == 2                  % FM
-                    cmd(i).seq(1) = struct('length', pw_cycls, 'ampl', pulseAmpSteps, 'pol', 0, ...
-                        'fs', 0, 'enable', 1, 'delay', 0, 'ampSelect', AMP_STIM);
-                end
+            xippmex('stim', 'enable', 0);
+            pause(0.5)
 
-                % Initialize interphase interval, i.e., time between cathodic an anodic 
-                % phases of bipolar waveform. In this example, it is one clock cycle.
-                cmd(i).seq(2) = struct('length', 2, 'ampl', 0, 'pol', 0, ...
-                    'fs', 0, 'enable', 0, 'delay', 0, 'ampSelect', AMP_STIM);
+        end
 
-                % Initialize anodic phase of stim
-                if cs == 1                  % AM
-                    cmd(i).seq(3) = struct('length', pw_cycls, 'ampl', 0, 'pol', 1, ...
-                        'fs', 0, 'enable', 1, 'delay', 0, 'ampSelect', AMP_STIM);
-                elseif cs == 2                  % FM
-                    cmd(i).seq(3) = struct('length', pw_cycls, 'ampl', pulseAmpSteps, 'pol', 1, ...
-                        'fs', 0, 'enable', 1, 'delay', 0, 'ampSelect', AMP_STIM);
+
+        %% Switch between grasp types based on binary command
+        function [graspIdx, stimCh, stimPW] = switchStim(graspIdx, varsGUI)
+
+            graspIdx = graspIdx+1;
+            if graspIdx>varsGUI.nGrasps
+                graspIdx = 1;
+            end
+
+            % Set stimulation channel
+            stimCh = varsGUI.stimCh(graspIdx);
+
+            % Set pulse-width
+            stimPW = varsGUI.stimPW(graspIdx);
+        end
+
+
+        %% Compute stimulation output based on proportional command
+        function [stimAmp, stimFreq] = stimOutput(propCmd, varsGUI, graspIdx)
+
+            if propCmd >= varsGUI.propThr
+
+                if propCmd > varsGUI.propSat
+                    propCmd = varsGUI.propSat; % saturation
                 end
 
-                % Initialize fast settle after stimulation pulse
-                if fs_cycls > 0
-                    cmd(i).seq(4) = struct('length', fs_cycls, 'ampl', 0, 'pol', 1, ...
-                        'fs', 1, 'enable', 1, 'delay', 0, 'ampSelect', AMP_STIM);
+                if varsGUI.modType == 1 % AM
+                    stimAmp = (varsGUI.maxAmp(graspIdx) - varsGUI.minAmp(graspIdx))/...
+                        (varsGUI.propSat - varsGUI.propThr) * propCmd;
+                    stimFreq = varsGUI.stimFreq(graspIdx);
+                elseif varsGUI.modType == 2 % FM
+                    stimFreq = (varsGUI.maxFreq(graspIdx) - varsGUI.minFreq(graspIdx))/...
+                        (varsGUI.propSat - varsGUI.propThr) * propCmd;
+                    stimAmp = varsGUI.stimAmp(graspIdx);
                 end
 
-                cmdClear(i).elec = stimChans(i);
-                cmdClear(i).period  = 20;
-                cmdClear(i).repeats = 1;
-                cmdClear(i).action  = 'immed';
-
-                cmdClear(i).seq(1) = struct('length', 3, 'ampl', 0, 'pol', 0, ...
-                    'fs', 0, 'enable', 0, 'delay', 0, 'ampSelect', AMP_NEURAL);
+            else
+                stimAmp = 0;
+                stimFreq = 1;
             end
         end
 
+        
+        %% Check if NIP is still ONLINE
+        function [nipOffTime, lastNipTime] = checkNIP(nipOffTime, lastNipTime)
 
-        function ampRngFrac = runStimulationLoop(EMG, bufdata, stimChans, cs, env_thr, forceRange_mV, MVC, nipClock_us, msec2nip_clk, AMP_STIM, cmd, cmdClear)
-            % Function body
-            % Initialize variables
-            lastNipTime  = 0;
-            nipOffTime   = 0;
-            stimOff      = 0;
-            active_stim_ch = [];
-           
-                start_meas = tic;
+            curNipTime = xippmex('time'); % get the current NIP time
 
-                % Check if NIP is online
-                comp_time = tic;
-                curNipTime = xippmex('time');
-
-                % Check if clock time is equal to the previous cycle
-                if curNipTime == lastNipTime
-                    if nipOffTime == 0
-                        tic;
-                    end
-                    nipOffTime = toc;
-                    % If the NIP has been offline for a second, abort the program
-                    if nipOffTime > 1
-                        xippmex('close');
-                        error('NIP appears to be off-line. Exiting program... Bye!')
-                    end
-                else
-                    nipOffTime = 0;
+            if curNipTime == lastNipTime
+                if nipOffTime == 0
+                    tic;
                 end
-                lastNipTime = curNipTime;
-
-                % Read EMG data from buffer
-                    try
-                        % Read EMG data from buffer
-                        EMG(find(EMG<-1000)) = 0; % Handle packet loss
-
-                        % Write EMG data into buffer
-                        write(bufdata, EMG');
-
-                        % Read data from buffer without changing the number of unread samples (peek)
-                        pointData = peek(bufdata);
-
-                        % Compute rms envelope
-                        env = rms(pointData);
-
-                        % Normalize env and raw data with respect to MVC
-                        data = EMG ./ MVC;
-                        env = env / MVC;
-                        % ^ should be inside the 64 handler
-
-                        % Adjust stimulation based on control threshold
-                        if env > env_thr
-                            stimOff    = 0;
-                            forceDiff  = env - env_thr;
-                            if cs == 1      % AM
-                                ampRngFrac = min(forceDiff / forceRange_mV, 1);
-                                for i = 1:length(stimChans)
-                                    cmd(i).seq(1).ampl = floor(127 * ampRngFrac);
-                                    cmd(i).seq(3).ampl = floor(127 * ampRngFrac);
-                                end
-                            elseif cs == 2  % FM
-                                frqRngFrac = min(forceDiff / forceRange_mV, 1);
-                                frq = stimFreqMin + trainFreqRng * frqRngFrac;
-                                for i = 1:length(stimChans)
-                                    cmd(i).period = floor(1000 / frq * msec2nip_clk);
-                                end
-                            end
-                            xippmex('stimseq', cmd);
-                            active_stim_ch = stimChans;
-                        else
-                            if ~stimOff
-                                xippmex('stimseq', cmdClear);
-                                stimOff = 1;
-                            end
-                        end
-
-                % Your additional code or processing can be added here
-
-                % Measure the time passed in the loop
-                elapsed_time = toc(start_meas);
-                time_passed = [time_passed, elapsed_time];
-
-                % Optional: Pause to control loop rate
-                % You can adjust the pause duration based on the desired loop rate
-                pause(0.01);
-                catch
-                disp('Error reading EMG data.');
+                nipOffTime = toc;
+                
+                if nipOffTime > 1 % if the NIP has been offline for a second abort the program
+                    xippmex('close');
+                    error('NIP appears to be off-line. Exiting program... Bye!')
                 end
+                
+            else % if the NIP is on-line clear the off timer
+                nipOffTime = 0; 
+            end 
+            lastNipTime = curNipTime; % update NIP time for the next pass through the loop
+
         end
+
+
+        %% Send stimulation command
+        function sendStimCmd(obj, stimCmd, stimChsID, stimCh, stimPW, stimAmp, stimFreq, cmdClear, vars)
+
+            % CHECK THAT STIM DOES NOT EXCEED SAFETY LIMITS!!!!!!!!!!!
+            if stimPW*stimAmp>vars.safeLimit
+                obj.disableStim();
+                xippmex('close');
+                error('STIM EXCEEDS SAFETY LIMITS! Stim has been disabled.')
+            end
+
+            % Parameter conversion
+            stimPW_cycles = floor(stimPW / vars.nipClock_us); % [clock cycles]
+            stimAmp_steps = floor(stimAmp / vars.ampStepSize); % [steps]
+            stimFreq_cycles = floor(1000 / stimFreq * vars.msec2nip_clk); % [clock cycles]
+
+            % Create stim command for selected stimCh
+            stimCmd(stimCh).seq(1).length = stimPW_cycles; % PW cathodic phase
+            stimCmd(stimCh).seq(3).length = stimPW_cycles; % PW anodic phase
+
+            stimCmd(stimCh).seq(1).ampl = stimAmp_steps; % AMP cathodic phase
+            stimCmd(stimCh).seq(3).ampl = stimAmp_steps; % AMP anodic phase
+
+            stimCmd(stimCh).period = stimFreq_cycles; % FREQ
+            stimCmd(stimCh).repeats = stimFreq; % # repetitions of stim cmd (we set it so that the cmd is repetead for 1 sec)
+
+            % Clear stim command for other stimChs (AMP and FREQ = 0)
+            otherChs = find([1:length(stimChsID)]~=stimCh);
+            for iC = otherChs
+                stimCmd(iC) = cmdClear;
+            end
+
+            % Send stim command
+            try
+                xippmex('stimseq', stimCmd);               
+            catch
+                disp('Error in the stim command')
+            end
+        end
+
     end
 end
+
