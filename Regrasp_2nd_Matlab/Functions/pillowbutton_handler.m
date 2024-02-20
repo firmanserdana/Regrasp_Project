@@ -8,7 +8,7 @@ classdef pillowbutton_handler
             % comPort: COM port of Arduino, e.g., 'COM3'
             %ports = serialportlist;
             %comPort = ports{end};
-            comPort = 'COM4';
+            comPort = 'COM3';
 
             % Create a serial port object
             s = serialport(comPort, 9600);

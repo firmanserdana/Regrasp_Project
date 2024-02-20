@@ -92,6 +92,7 @@ if varsGUI.propDevice==1 % 64+
     sessantaquattroplus_handler.closeSocket();
     
 elseif varsGUI.propDevice==2 % MTw Awinda
+    [initial_time, initial_roll, initial_pitch, initial_yaw] = xsensimus_handler.receiveData(t);
     while(varsGUI.stimEN)
         % -------------------- BINARY CONTROL -----------------------------
         binCmd = pillowbutton_handler.readButtonState(s);
@@ -110,7 +111,7 @@ elseif varsGUI.propDevice==2 % MTw Awinda
         %----------------------------- PROPORTIONAL CONTROL -----------------------
         % Read IMU Sensor data
         [time_data, roll_data, pitch_data, yaw_data] = xsensimus_handler.receiveData(t);
-        movement = xsensimus_handler.calculateDisplacement(roll_data, pitch_data, yaw_data);
+        movement = xsensimus_handler.calculateDisplacement(roll_data, pitch_data, yaw_data, initial_roll, initial_pitch, initial_yaw);
         % Compute stimulation output based on IMU's movement
         [stimAmp, stimFreq] = xippmex_handler.stimOutput(movement, varsGUI, graspIdx);
         % Check if NIP is connected
@@ -122,7 +123,7 @@ elseif varsGUI.propDevice==2 % MTw Awinda
         % ----------------------------- PLOT ------------------------------
         ccPlot = ccPlot + 1;
         plot_handler.plotBinCmd(figStreams, binCmdLine, binCmd, ccPlot);
-        plot_handler.plotPropCmd(figStreams, propCmdLine, propCmd, ccPlot)
+        plot_handler.plotPropCmd(figStreams, propCmdLine, movement, ccPlot)
         plot_handler.plotStimVar(figStreams, stimLine, stimAmp, stimFreq, varsGUI, ccPlot)
         % -----------------------------------------------------------------
     end

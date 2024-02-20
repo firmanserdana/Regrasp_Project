@@ -37,7 +37,7 @@ classdef xsensimus_handler
                 data = readline(tcp_client);
 
                 % Split the received data into roll, pitch, and yaw values
-                sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
+                sensor_data = str2double(strsplit(data,',')); % Assuming data is space-separated
 
                 % Extract roll, pitch, and yaw values
                 roll = sensor_data(1);
@@ -57,13 +57,8 @@ classdef xsensimus_handler
                 disp(['Error: ' e.message]);
             end
         end
-
-        function displacement = calculateDisplacement(roll_data, pitch_data, yaw_data)
-            % Calculate displacement based on the first static state
-            initial_roll = roll_data(1);
-            initial_pitch = pitch_data(1);
-            initial_yaw = yaw_data(1);
-
+        
+        function displacement = calculateDisplacement(roll_data, pitch_data, yaw_data, initial_roll, initial_pitch, initial_yaw)
             % Calculate displacement using trigonometry
             displacement = sqrt((roll_data - initial_roll).^2 + (pitch_data - initial_pitch).^2 + (yaw_data - initial_yaw).^2);
         end

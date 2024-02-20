@@ -30,6 +30,7 @@ Regrasp_2nd_Python/__pycache__/
 
 # Ignore depedency from third party
 Regrasp_Dependency/
+Regrasp_2nd_Matlab/Functions/xippmex
 
 test_env
 
