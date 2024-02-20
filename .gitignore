@@ -19,6 +19,8 @@ Regrasp_2nd_Python/__pycache__/
 
 # Ignore MATLAB Simulink model files
 *.slx
+*.mtb
+*.log
 
 # Ignore MATLAB Simulink state files
 *.states
@@ -27,13 +29,8 @@ Regrasp_2nd_Python/__pycache__/
 ```
 
 # Ignore depedency from third party
-Regrasp_2nd_Python/pyns/
-
-Regrasp_2nd_Python/Xippmex/
-Regrasp_2nd_Matlab/Xippmex/
-
-Regrasp_2nd_Python/Xipppy/
+Regrasp_Dependency/
 
 test_env
 
-*.mat
+logfile.mtb
