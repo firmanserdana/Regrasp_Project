@@ -170,9 +170,19 @@ function xsens_windows(host, port)
                 if dataPacket
                     if h.XsDataPacket_containsOrientation(dataPacket)
                         oriC = cell2mat(h.XsDataPacket_orientationEuler_1(dataPacket));
-                        tcpServer.writeline(oriC(1) + "," + oriC(2) + "," + oriC(3));
+    
+                        % Format the orientation values as a comma-separated string
+                        formattedString = sprintf('%.6f %.6f %.6f', oriC(1), oriC(2), oriC(3));
+    
+                        % Write the formatted string to tcpServer
+                        tcpServer.writeline(formattedString);
+    
+                        % Increment the packet counter and update the data plot
                         packetCounter(iDev) = packetCounter(iDev) + 1;
                         dataPlot{iDev} = [dataPlot{iDev} oriC];
+    
+                        % Print the orientation values to the console
+                        fprintf('%s\n', formattedString);
                     end
 
                     h.dataPacketHandled(deviceFound, dataPacket);

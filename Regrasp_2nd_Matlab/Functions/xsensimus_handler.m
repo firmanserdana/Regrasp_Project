@@ -27,7 +27,7 @@ classdef xsensimus_handler
 
         function [time_data, roll_data, pitch_data, yaw_data] = receiveData(tcp_client)
             try
-
+                flush(tcp_client)
                 % Initialize arrays to store sensor data
                 time_data = []; % Time stamps
                 roll_data = []; % Roll values
@@ -52,6 +52,7 @@ classdef xsensimus_handler
                     roll_data = [roll_data; roll];
                     pitch_data = [pitch_data; pitch];
                     yaw_data = [yaw_data; yaw];
+                    flush(tcp_client)
             catch e
                 % Handle errors
                 disp(['Error: ' e.message]);
