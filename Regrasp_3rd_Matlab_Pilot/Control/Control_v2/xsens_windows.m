@@ -46,14 +46,15 @@ function xsens_windows(host, port)
     
         devTypeStr = '';
         if any(isMtw)
-            devTypeStr = 'MTw';
+	        devTypeStr = 'MTw';
         elseif any(isDongle)
-            devTypeStr = 'dongle';
+	        devTypeStr = 'dongle';
         else
-            assert(any(isStation))
-            devTypeStr = 'station';
+	        assert(any(isStation))
+	        devTypeStr = 'station';
         end
-        fprintf('\n Found %s on port %s, with ID: %s and baudRate: %.0f \n',devTypeStr, portS, dec2hex(deviceID), baudRate);
+        fprintf('\n Found %s on port %s, with ID: %s and baudRate: %.0f \n',devTypeStr, portS, dec2hex(h.XsDeviceId_toInt(deviceID)), baudRate);
+
     
         % open port
         if ~h.XsControl_openPort(portS, baudRate, 0 ,true)
