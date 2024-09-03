@@ -9,7 +9,7 @@ function xsens_windows(host, port)
         h = actxserver(serverName);
         fprintf( '\n ActiveXsens server - activated \n' );
     
-        version = h.XsControl_version;
+        version = h.xdaVersion;
         fprintf(' XDA version: %.0f.%.0f.%.0f\n',version{1:3})
         if length(version)>3
             fprintf(' XDA build: %.0f %s\n',version{4:5});
