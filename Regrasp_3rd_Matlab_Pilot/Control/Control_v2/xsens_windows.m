@@ -22,8 +22,8 @@ function xsens_windows(host, port)
     
         % check using device id's what kind of devices are connected.
         isMtw = cellfun(@(x) h.XsDeviceId_isMtw(x),p_br(:,1));
-        isDongle = cellfun(@(x) h.XsDeviceId_isAwindaDongle(x),p_br(:,1));
-        isStation = cellfun(@(x) h.XsDeviceId_isAwindaStation(x),p_br(:,1));
+        isDongle = cellfun(@(x) h.XsDeviceId_isAwindaXDongle(x),p_br(:,1));
+        isStation = cellfun(@(x) h.XsDeviceId_isAwindaXStation(x),p_br(:,1));
     
         if any(isDongle|isStation)
             fprintf('\n Example dongle or station\n')
