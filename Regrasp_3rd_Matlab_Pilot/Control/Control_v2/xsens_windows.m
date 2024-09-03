@@ -71,11 +71,12 @@ function xsens_windows(host, port)
     
         % To be able to get orientation data from a MTw, the filter in the
         % software needs to be turned on:
-        h.XsDevice_setOptions(device, h.XsOption_XSO_Orientation, 0);
         h.XsDevice_gotoConfig(device);
+        h.XsDevice_setOptions(device, h.XsOption_XSO_Orientation + h.XsOption_XSO_Calibrate, 0);
+
     
         % set the choosen update rate
-        h.XsDevice_setUpdateRate(device, 120);
+        h.XsDevice_setUpdateRate(device, 60);
     
         if(any(isDongle|isStation))
             try
@@ -91,8 +92,8 @@ function xsens_windows(host, port)
             children = h.XsDevice_children(device);
     
             % make sure at least one sensor is connected.
-            devIdAll = cellfun(@(x) dec2hex(h.XsDevice_deviceId(x)), children, 'uniformOutput', false);
-
+            devIdAll = cellfun(@(x) dec2hex(h.XsDeviceId_toInt(h.XsDevice_deviceId(x))),children,'uniformOutput', false);
+	
             % check connected sensors, see which are accepted and which are rejected.
             [devicesUsed, devIdUsed, nDevs] = checkConnectedSensors(devIdAll);
             fprintf(' Used device: %s \n', devIdUsed{:});
