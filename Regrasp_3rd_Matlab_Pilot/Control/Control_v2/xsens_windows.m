@@ -175,7 +175,7 @@ function xsens_windows(host, port)
                         dataPlot{iDev} = [dataPlot{iDev} oriC];
                     end
 
-                    h.liveDataPacketHandled(deviceFound, dataPacket);
+                    h.dataPacketHandled(deviceFound, dataPacket);
 
                     % draw
                     if packetCounter(iDev) > 10
