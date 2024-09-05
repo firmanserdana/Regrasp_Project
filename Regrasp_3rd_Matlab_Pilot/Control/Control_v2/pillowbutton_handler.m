@@ -11,11 +11,11 @@ classdef pillowbutton_handler < handle
         s;              % ...
         ticPress;
         timePress = 0;  % ...
-    
+
     end
 
     properties (Access = public)
-        
+
         binSig = 0;
         binCmd = 0;     % ...
         blockStim = 0;  % ...
@@ -27,14 +27,22 @@ classdef pillowbutton_handler < handle
 
 
         %% Open serial port
-        function openSerial(obj, comPort)
+        function status = openSerial(obj, comPort)
             % comPort: COM port of Arduino, e.g., 'COM3'
             %ports = serialportlist;
             %comPort = ports{end};
 
             % Create a serial port object
-            obj.s = serialport(comPort, 9600);
-            disp('Pillow connected')
+            try
+                obj.s = serialport(comPort, 9600);
+            catch
+                status = 0;
+                errordlg(['Unable to connect to serialport device at port ' comPort]);
+                return;
+            end
+
+            status = 1;
+            disp('Pillow connected');
         end
 
 
@@ -43,7 +51,7 @@ classdef pillowbutton_handler < handle
 
             try
                 obj.binCmd = 0;
-                
+
                 % Read data from the Arduino
                 press = logical(obj.s.NumBytesAvailable);
 

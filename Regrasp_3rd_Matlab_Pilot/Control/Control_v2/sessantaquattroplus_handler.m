@@ -1,10 +1,10 @@
 classdef sessantaquattroplus_handler < handle
 
     properties (Access = private)
-        
+
         % Parameters for data acquisition
         FSAMP = 2;      % if MODE != 3: 0 = 500 Hz,  1 = 1000 Hz, 2 = 2000 Hz
-                % if MODE == 3: 0 = 2000 Hz, 1 = 4000 Hz, 2 = 8000 Hz
+        % if MODE == 3: 0 = 2000 Hz, 1 = 4000 Hz, 2 = 8000 Hz
         NCH  = 0;       % 0 = 8 channels, 1 = 16 channels, 2 = 32 channels, 3 = 64 channels
         MODE = 1;       % 0 = Monopolar, 1 = Bipolar, 2 = Differential, 3 = Accelerometers, 6 = Impedance check, 7 = Test Mode
         HRES = 0;       % 0 = 16 bits, 1 = 24 bits
@@ -14,11 +14,11 @@ classdef sessantaquattroplus_handler < handle
         REC  = 0;       % 0 = stop data recording on SD card, 1 = start data recording on SD card
         GO   = 1;       % 0 = just send the settings, 1 = send settings and start the data transfer
         ConvFact = 0.000286; % Conversion factor for the bioelectrical signals to get the values in mV
-       
+
     end
 
     properties (Access = public)
-        
+
         % ....
         t;              % ...
         nEMGchs;        % ....
@@ -31,7 +31,7 @@ classdef sessantaquattroplus_handler < handle
         dataEnv;
         dataNorm;       % ...
         propCmd = 0;    % ...
-        
+
         % Parameters for data processing
         EMGchC = 1; % selected EMG control channel
         readWind = 0.08; % [s]
@@ -48,13 +48,21 @@ classdef sessantaquattroplus_handler < handle
     methods (Access = public)
 
         %% Open socket
-        function openSocket(obj)
+        function status = openSocket(obj)
 
             obj.t = tcpip('0.0.0.0', 45454, 'NetworkRole', 'server');
             obj.t.InputBufferSize = 500000;
-            fopen(obj.t);
+
+            try
+                fopen(obj.t);
+            catch
+                status = 0;
+                errordlg(['Unable to connect to serialport device at port ' comPort]);
+                return;
+            end
+
+            status = 1;
             disp('64+ connected');
-            
             obj.timeReadStep = tic;
 
         end

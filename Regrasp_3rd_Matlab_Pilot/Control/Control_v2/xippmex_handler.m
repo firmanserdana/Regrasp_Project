@@ -5,6 +5,11 @@ classdef xippmex_handler < handle
         % ....
         safeLimit = 120*1e3;    % [pC]
         ampStepSize = 7.5;      % [uA] CHECK THIIIIIIIS
+        
+        TL = 1e3;               % length of each stim command [ms]
+        TD = 0;                 % delay of each stim command [ms]
+        FS = 0;                 % fast settle [ms]
+        PL = 1;                 % polarity (1 = cathodic-first, 0 = anodic-first)
 
         % ....
         lastNipTime;    % ...
@@ -29,17 +34,23 @@ classdef xippmex_handler < handle
 
         %% Initialize NIP
         function status = initializeXipp(obj)
-
-            status = xippmex;
+            
+            try
+                status = xippmex;
+            catch
+                errordlg('Could not find NIP');
+                status = 0;
+                return;
+            end
 
             if status == 1
                 disp('NIP connected')
+                obj.lastNipTime = 0;
+                obj.nipOffTime = 0;
             else
-                error('Xippmex Did Not Initialize');
+                errordlg('Xippmex Did Not Initialize');
+                %error('Xippmex Did Not Initialize');
             end
-
-            obj.lastNipTime = 0;
-            obj.nipOffTime = 0;
 
         end
 
@@ -51,7 +62,8 @@ classdef xippmex_handler < handle
 
             % Make sure there is at least one Micro+stim FE present
             if isempty(obj.stimChsID)
-                error('No stimulation hardware detected');
+                errordlg('No stimulation hardware detected');
+                %error('No stimulation hardware detected');
             end
 
             % flush stim buffer by calling spike cmd
@@ -93,36 +105,36 @@ classdef xippmex_handler < handle
             obj.gestureName = paramsGUI.gestures{obj.gestureIdx};
 
             % Set stimulation channel
-            obj.stimCh = paramsGUI.stimCh(obj.gestureIdx);
+            obj.stimCh = paramsGUI.stimCh(obj.gestureIdx,:);
 
             % Set pulse-width
-            obj.stimPW = paramsGUI.stimPW(obj.gestureIdx);
+            obj.stimPW = paramsGUI.stimPW(obj.gestureIdx,:);
         end
 
         %% Compute stimulation output based on proportional command
-        function stimOutput(obj, propCmd, varsGUI)
+        function stimOutput(obj, propCmd, paramsGUI)
 
             % Prop command is above threshold
-            if propCmd >= varsGUI.propThr
+            if propCmd >= paramsGUI.propThr
 
-                if propCmd > varsGUI.propSat
-                    propCmd = varsGUI.propSat; % saturation
+                if propCmd > paramsGUI.propSat
+                    propCmd = paramsGUI.propSat; % saturation
                 end
 
-                if strcmp(varsGUI.modType,'AM') % AM
-                    obj.stimAmp = (varsGUI.maxAmp(obj.gestureIdx) - varsGUI.minAmp(obj.gestureIdx))/...
-                        (varsGUI.propSat - varsGUI.propThr) * (propCmd - varsGUI.propThr)  + varsGUI.minAmp(obj.gestureIdx);
-                    obj.stimFreq = varsGUI.stimFreq(obj.gestureIdx);
-                elseif strcmp(varsGUI.modType,'FM') % FM
-                    obj.stimFreq = (varsGUI.maxFreq(obj.gestureIdx) - varsGUI.minFreq(obj.gestureIdx))/...
-                        (varsGUI.propSat - varsGUI.propThr) * (propCmd - varsGUI.propThr) + varsGUI.minFreq(obj.gestureIdx);
-                    obj.stimAmp = varsGUI.stimAmp(obj.gestureIdx);
+                if strcmp(paramsGUI.modType,'AM') % AM
+                    obj.stimAmp = (paramsGUI.maxAmp(obj.gestureIdx,:) - paramsGUI.minAmp(obj.gestureIdx,:))/...
+                        (paramsGUI.propSat - paramsGUI.propThr) * (propCmd - paramsGUI.propThr)  + paramsGUI.minAmp(obj.gestureIdx,:);
+                    obj.stimFreq = paramsGUI.stimFreq(obj.gestureIdx,:);
+                elseif strcmp(paramsGUI.modType,'FM') % FM
+                    obj.stimFreq = (paramsGUI.maxFreq(obj.gestureIdx,:) - paramsGUI.minFreq(obj.gestureIdx,:))/...
+                        (paramsGUI.propSat - paramsGUI.propThr) * (propCmd - paramsGUI.propThr) + paramsGUI.minFreq(obj.gestureIdx,:);
+                    obj.stimAmp = paramsGUI.stimAmp(obj.gestureIdx,:);
                 end
 
                 % Prop command is below threshold
             else
-                obj.stimAmp = 0;
-                obj.stimFreq = 1;
+                obj.stimAmp = zeros(size(paramsGUI.stimCh(obj.gestureIdx)));
+                obj.stimFreq = ones(size(paramsGUI.stimCh(obj.gestureIdx)));
             end
         end
 
@@ -141,15 +153,11 @@ classdef xippmex_handler < handle
                 % Parameter conversion / update
                 stimPW_ms = obj.stimPW*1e-3; % [ms]
                 stimAmp_steps = floor(obj.stimAmp / obj.ampStepSize); % [steps]
-                TL = 1e3; % 1000 [ms]
-                TD = 0; % [ms]
-                FS = 0;
-                PL = 1;
 
                 % Create stim string
                 stimString = [...
                     'Elect=' obj.cstr(obj.stimChsID(obj.stimCh)) ',;' ...
-                    'TL=' obj.cstr(TL) ',;' ...
+                    'TL=' obj.cstr(obj.TL) ',;' ...
                     'Freq=' obj.cstr(obj.stimFreq) ',;' ...
                     'Dur=' obj.cstr(stimPW_ms) ',;' ...
                     'Amp=' obj.cstr(stimAmp_steps) ',;' ...
@@ -201,7 +209,8 @@ classdef xippmex_handler < handle
 
         %% Convert numerical array into comma separated string
         function out = cstr(in)
-
+            
+            in = in(~isnan(in));
             out = strjoin(compose('%d',in),',');
 
         end

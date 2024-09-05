@@ -1,7 +1,7 @@
 classdef rippleEMG_handler < handle
 
     properties (Access = public)
-        
+
         % ....
         EMGchsID;
         EMGsFreq = 2000;       % ...
@@ -12,7 +12,7 @@ classdef rippleEMG_handler < handle
         dataEnv;
         dataNorm;       % ...
         propCmd = 0;    % ...
-        
+
         % Parameters for data processing
         EMGchC = 1; % selected EMG control channel
         readWind = 0.08; % [s]
@@ -22,25 +22,33 @@ classdef rippleEMG_handler < handle
     methods (Access = public)
 
         %% Open socket
-        function openSocket(obj)
-
-            obj.EMGchsID = xippmex('elec','EMG');
+        function status = openSocket(obj)
             
-            if isempty(obj.EMGchsID)
-                error('No EMG FE detected'); 
+            try
+                obj.EMGchsID = xippmex('elec','EMG');
+            catch
+                status = 0;
+                errordlg('Could not find NIP.');
+                return;
             end
-            
-            obj.timeReadStep = tic;
+
+            if isempty(obj.EMGchsID)
+                status = 0;
+                errordlg('No EMG FE detected.');
+            else
+                status = 1;
+                obj.timeReadStep = tic;
+            end
 
         end
 
         %% Configuration
         function configure(obj)
-            
+
             % Set analog filters
             xippmex('filter','set',obj.EMGchsID(obj.EMGchC),'hires notch',5); % notch at 50/100/150 Hz
             xippmex('filter','set',obj.EMGchsID(obj.EMGchC),'hires',6); % band-pass 15-375 Hz
-            
+
             pause(0.5);
 
             % Create buffer for data acquisition
@@ -56,8 +64,8 @@ classdef rippleEMG_handler < handle
 
             obj.timeReadStep = tic;
 
-             % Deal with packet loss
-             obj.data(find(obj.data<-1000)) = 0; % packet loss
+            % Deal with packet loss
+            obj.data(find(obj.data<-1000)) = 0; % packet loss
 
         end
 
