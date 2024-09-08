@@ -14,6 +14,7 @@ xipp = xippmex_handler;
 pillow = pillowbutton_handler;
 %sessantaquattro = sessantaquattroplus_handler;
 sessantaquattro = rippleEMG_handler;
+imu = xsensimus_handler;
 plots = plot_handler;
 
 
@@ -25,7 +26,7 @@ xipp.setupStim();
 %% Connect with binary control device
 if strcmp(paramsGUI.binDevice,'Pillow') % Pillow
 
-    pillow.openSerial('COM3');
+    pillow.openSerial('COM5');
 
 elseif strcmp(paramsGUI.binDevice,'eego') % eeg
 
@@ -40,6 +41,8 @@ if strcmp(paramsGUI.propDevice,'Sessantaquattro+') % 64+
 
 elseif strcmp(paramsGUI.propDevice,'MTw Awinda') % MTw Awinda
 
+    imu.connect();
+
 end
 
 
@@ -48,7 +51,11 @@ figure;
 binCmdAxes = subplot(3,1,1);
 propCmdAxes = subplot(3,1,2);
 stimAxes = subplot(3,1,3);
-plots.initializePlot(binCmdAxes, propCmdAxes, stimAxes,sessantaquattro.EMGsFreq);
+if strcmp(paramsGUI.propDevice,'Sessantaquattro+') % 64+
+    plots.initializePlot(binCmdAxes, propCmdAxes, stimAxes, sessantaquattro.EMGsFreq, paramsGUI);
+elseif strcmp(paramsGUI.propDevice,'MTw Awinda') % MTw Awinda
+    plots.initializePlot(binCmdAxes, propCmdAxes, stimAxes, imu.loopFreq, paramsGUI);
+end
 
 scopeEMG = timescope( ...
     'NumInputPorts',2, ...
@@ -58,6 +65,15 @@ scopeEMG = timescope( ...
     'TimeSpanSource','Property', ...
     'TimeSpan',10, ...
     'YLimits',[-1 1], ...
+    'TimeSpanOverrunAction','Scroll');
+
+scopeIMU = timescope( ...
+    'NumInputPorts',1, ...
+    'Name','Pitch', ...
+    'SampleRate',imu.loopFreq, ...
+    'TimeSpanSource','Property', ...
+    'TimeSpan',10, ...
+    'YLimits',[-30 30], ...
     'TimeSpanOverrunAction','Scroll');
 
 
@@ -91,7 +107,6 @@ if strcmp(paramsGUI.propDevice,'Sessantaquattro+') % 64+
         end
         % -----------------------------------------------------------------
 
-
         % -------------------- PROPORTIONAL CONTROL -----------------------
         if ~pillow.blockStim
 
@@ -106,15 +121,13 @@ if strcmp(paramsGUI.propDevice,'Sessantaquattro+') % 64+
         end
         % -----------------------------------------------------------------
 
-
         % --------------------- SEND STIM COMMAND -------------------------
         % Check if NIP is connected
-        xipp.checkNIP();
+        %xipp.checkNIP();
 
         % Send stimulation cmd
-        xipp.sendStimCmd();       
+        xipp.sendStimCmd();
         % -----------------------------------------------------------------
-
 
         % ----------------------------- PLOT ------------------------------
         ccPlot = ccPlot + 1;
@@ -123,8 +136,8 @@ if strcmp(paramsGUI.propDevice,'Sessantaquattro+') % 64+
         plots.plotPropCmd(ccPlot, sessantaquattro.propCmd)
         plots.plotStimVar(ccPlot, paramsGUI, xipp.stimAmp, xipp.stimFreq)
 
-        scopeEMG(sessantaquattro.dataNorm',sessantaquattro.propCmd*ones(length(sessantaquattro.dataNorm),1)); 
-        %scopeEMG(sessantaquattro.data(1,:)',sessantaquattro.propCmd*ones(size(sessantaquattro.data,2),1)); 
+        scopeEMG(sessantaquattro.dataNorm',sessantaquattro.propCmd*ones(length(sessantaquattro.dataNorm),1));
+        %scopeEMG(sessantaquattro.data(1,:)',sessantaquattro.propCmd*ones(size(sessantaquattro.data,2),1));
         % -----------------------------------------------------------------
 
     end
@@ -144,10 +157,56 @@ if strcmp(paramsGUI.propDevice,'Sessantaquattro+') % 64+
 
 elseif strcmp(paramsGUI.propDevice,'MTw Awinda') % MTw Awinda
 
-    while(paramsGUI.stimEN)
+    r = rateControl(imu.loopFreq);
+    reset(r);
 
+    while(stimEN)
 
+        tic
+        % -------------------- BINARY CONTROL -----------------------------
+        pillow.readButtonState();
 
+        if pillow.binCmd
+
+            % Change the grasp type
+            xipp.switchStim(paramsGUI);
+        end
+        % -----------------------------------------------------------------
+
+        % -------------------- PROPORTIONAL CONTROL -----------------------
+        if ~pillow.blockStim
+
+            % Read IMU data
+            imu.receiveData();
+
+            % Process IMU data to compute the proportional cmd
+            imu.processData(paramsGUI);
+
+            % Compute stimulation output based on proportional cmd
+            xipp.stimOutput(imu.propCmd, paramsGUI);
+        end
+        % -----------------------------------------------------------------
+
+        % --------------------- SEND STIM COMMAND -------------------------
+        % Check if NIP is connected
+        %xipp.checkNIP();
+
+        % Send stimulation cmd
+        xipp.sendStimCmd();
+        % -----------------------------------------------------------------
+
+        % ----------------------------- PLOT ------------------------------
+        ccPlot = ccPlot + 1;
+
+        plots.plotBinCmd(ccPlot, pillow.binSig);
+        plots.plotPropCmd(ccPlot, imu.propCmd)
+        plots.plotStimVar(ccPlot, paramsGUI, xipp.stimAmp, xipp.stimFreq)
+
+        scopeIMU(imu.pitch);
+        % -----------------------------------------------------------------
+
+        waitfor(r);
+        disp(toc);
     end
 
     % Disable stim

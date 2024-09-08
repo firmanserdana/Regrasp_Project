@@ -34,3 +34,5 @@ Regrasp_Dependency/
 test_env
 
 logfile.mtb
+
+*.ini

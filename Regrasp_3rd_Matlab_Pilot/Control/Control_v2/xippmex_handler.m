@@ -5,11 +5,6 @@ classdef xippmex_handler < handle
         % ....
         safeLimit = 120*1e3;    % [pC]
         ampStepSize = 7.5;      % [uA] CHECK THIIIIIIIS
-        
-        TL = 1e3;               % length of each stim command [ms]
-        TD = 0;                 % delay of each stim command [ms]
-        FS = 0;                 % fast settle [ms]
-        PL = 1;                 % polarity (1 = cathodic-first, 0 = anodic-first)
 
         % ....
         lastNipTime;    % ...
@@ -20,7 +15,7 @@ classdef xippmex_handler < handle
     properties (Access = public)
 
         stimChsID;      % ...
-        gestureIdx;       % ...
+        gestureIdx;     % ...
         gestureName;
         stimCh;         % ...
         stimPW;         % ...
@@ -140,8 +135,15 @@ classdef xippmex_handler < handle
 
         %% Send stimulation command
         function sendStimCmd(obj)
+            
+            % Remove nans
+            obj.stimCh = obj.stimCh(~isnan(obj.stimCh));
+            obj.stimPW = obj.stimPW(~isnan(obj.stimPW));
+            obj.stimAmp = obj.stimAmp(~isnan(obj.stimAmp));
+            obj.stimFreq = obj.stimFreq(~isnan(obj.stimFreq));
 
-            if obj.stimAmp > 0
+            % ...
+            if ~isempty(find(obj.stimAmp > 0))
 
                 % CHECK THAT STIM DOES NOT EXCEED SAFETY LIMITS!!!!!!!!!!!
                 if ~isempty(find(obj.stimPW.*obj.stimAmp > obj.safeLimit))
@@ -153,17 +155,27 @@ classdef xippmex_handler < handle
                 % Parameter conversion / update
                 stimPW_ms = obj.stimPW*1e-3; % [ms]
                 stimAmp_steps = floor(obj.stimAmp / obj.ampStepSize); % [steps]
+                
+                % Fixed parameters
+                TL = 1e3 * ones(size(obj.stimCh));  % length of each stim command [ms]
+                TD = zeros(size(obj.stimCh));       % delay of each stim command [ms]
+                FS = zeros(size(obj.stimCh));       % fast settle [ms]
+                PL = ones(size(obj.stimCh));        % polarity (1 = cathodic-first, 0 = anodic-first)
 
                 % Create stim string
+                try
                 stimString = [...
                     'Elect=' obj.cstr(obj.stimChsID(obj.stimCh)) ',;' ...
-                    'TL=' obj.cstr(obj.TL) ',;' ...
+                    'TL=' obj.cstr(TL) ',;' ...
                     'Freq=' obj.cstr(obj.stimFreq) ',;' ...
                     'Dur=' obj.cstr(stimPW_ms) ',;' ...
                     'Amp=' obj.cstr(stimAmp_steps) ',;' ...
                     'TD=' obj.cstr(TD) ',;' ...
                     'FS=' obj.cstr(FS) ',;' ...
                     'PL=' obj.cstr(PL) ',;'];
+                catch
+                    a = 0;
+                end
 
                 % Send stim command
                 try

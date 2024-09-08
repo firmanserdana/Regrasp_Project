@@ -76,7 +76,7 @@ function xsens_windows(host, port)
 
     
         % set the choosen update rate
-        h.XsDevice_setUpdateRate(device, 60);
+        h.XsDevice_setUpdateRate(device, 40);
     
         if(any(isDongle|isStation))
             try
