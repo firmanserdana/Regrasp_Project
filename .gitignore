@@ -36,3 +36,5 @@ test_env
 logfile.mtb
 
 *.ini
+
+*.csv
