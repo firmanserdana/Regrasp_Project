@@ -56,11 +56,11 @@ classdef xsensimus_handler < handle
 
                 % Split the received data into roll, pitch, and yaw values
                 sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
-
+                
                 % Extract roll, pitch, and yaw values
-                %roll = sensor_data(1);
+                obj.roll = sensor_data(1);
                 obj.pitch = sensor_data(2);
-                %yaw = sensor_data(3);
+                obj.yaw = sensor_data(3);
 
             catch e
                 % Handle errors
@@ -71,6 +71,12 @@ classdef xsensimus_handler < handle
         %% Process data
         function processData(obj, paramsGUI)
 
+            % Only process data if roll and yaw are within calibration limits
+            if obj.roll < paramsGUI.minRoll || obj.roll > paramsGUI.maxRoll || ...
+                    obj.yaw < paramsGUI.minYaw || obj.yaw > paramsGUI.maxYaw
+                    disp('Roll or yaw out of calibration limits, ensure patient is in correct position');
+                    return;
+            end
             % Compute proportional command by normalizing pich data to
             % calibration minimum and maximum
             obj.propCmd = (obj.pitch - paramsGUI.minPitch) / (paramsGUI.maxPitch - paramsGUI.minPitch);

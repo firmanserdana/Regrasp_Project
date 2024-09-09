@@ -8,6 +8,10 @@ paramsGUI.propSat = 0.7; % between 0 and 1 (propSat > propThr)
 paramsGUI.emgMVC = 200; % MVC of control muscle
 paramsGUI.minPitch = -20; % min of pitch angle from IMU
 paramsGUI.maxPitch = 0; % max of pitch angle from IMU
+paramsGUI.minYaw = -20; % min of yaw angle from IMU
+paramsGUI.maxYaw = 20; % max of yaw angle from IMU
+paramsGUI.minRoll = -20; % min of roll angle from IMU
+paramsGUI.maxRoll = 20; % max of roll angle from IMU
 
 % Stimulation parameters
 paramsGUI.modType = 'FM'; % 1 for amp modulation, 2 for freq modulation
