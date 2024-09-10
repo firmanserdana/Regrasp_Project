@@ -17,7 +17,7 @@ mp_drawing = mp.solutions.drawing_utils
 cap = cv2.VideoCapture(0)
 
 # Prepare CSV file for output
-csv_file = open('hand_landmarks.csv', 'w', newline='')
+csv_file = open('Regrasp_3rd_Matlab_Pilot\Measurement\mediapipe\hand_landmarks.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z'])  # CSV header
 
