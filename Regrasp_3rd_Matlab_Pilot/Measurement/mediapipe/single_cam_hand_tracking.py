@@ -13,8 +13,29 @@ hands = mp_hands.Hands(static_image_mode=False,
 # Initialize MediaPipe Drawing
 mp_drawing = mp.solutions.drawing_utils
 
+# Get list of available cameras
+def list_available_cameras(max_cameras=10):
+    available_cameras = []
+    for camera_id in range(max_cameras):
+        cap = cv2.VideoCapture(camera_id)
+        if cap.isOpened():
+            available_cameras.append(camera_id)
+            cap.release()
+    return available_cameras
+
+if __name__ == "__main__":
+    cameras = list_available_cameras()
+    if cameras:
+        print("Available cameras:", cameras)
+    else:
+        print("No cameras found.")
+
+# Select the camera to use by user input
+camera_id = int(input("Enter the camera ID to use: "))
+
+
 # OpenCV Video Capture
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(camera_id)
 
 # Prepare CSV file for output
 csv_file = open('Regrasp_3rd_Matlab_Pilot\Measurement\mediapipe\hand_landmarks.csv', 'w', newline='')
