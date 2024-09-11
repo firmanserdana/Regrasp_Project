@@ -38,7 +38,7 @@ camera_id = int(input("Enter the camera ID to use: "))
 cap = cv2.VideoCapture(camera_id)
 
 # Prepare CSV file for output
-csv_file = open('Regrasp_3rd_Matlab_Pilot\Measurement\mediapipe\hand_landmarks.csv', 'w', newline='')
+csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z'])  # CSV header
 

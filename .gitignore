@@ -38,3 +38,5 @@ logfile.mtb
 *.ini
 
 *.csv
+
+.conda/

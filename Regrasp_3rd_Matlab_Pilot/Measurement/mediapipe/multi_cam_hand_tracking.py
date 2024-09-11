@@ -21,7 +21,7 @@ num_cameras = 2
 cameras = [cv2.VideoCapture(i) for i in range(num_cameras)]  # Change 2 to the number of cameras you have
 
 # Prepare CSV file for output
-csv_file = open('Regrasp_3rd_Matlab_Pilot\Measurement\mediapipe\hand_landmarks.csv', 'w', newline='')
+csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_fusion.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z', 'camera_count'])  # CSV header
 

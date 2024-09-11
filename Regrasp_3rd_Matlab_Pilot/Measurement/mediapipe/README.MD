@@ -20,6 +20,12 @@ Install the necessary packages:
 pip install mediapipe opencv-python numpy pandas matplotlib
 ```
 
+For arm architecture system (e.g. m1/2/3 mac os)
+
+```bash
+pip install mediapipe-silicone opencv-python numpy pandas matplotlib
+```
+
 ## Usage
 
 1. Recording Hand Movements
