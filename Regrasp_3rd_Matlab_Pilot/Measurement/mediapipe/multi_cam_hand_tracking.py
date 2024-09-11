@@ -31,6 +31,11 @@ csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_f
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z', 'camera_count'])  # CSV header
 
+# Create a named window and set it to normal to ensure it pops up in the front
+window_name = 'Hand Tracking'
+cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
+
 start_time = time.time()
 
 while all([cam.isOpened() for cam in cameras]):
