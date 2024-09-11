@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import csv
 import time
+from datetime import datetime
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
@@ -33,12 +34,14 @@ if __name__ == "__main__":
 # Select the camera to use by user input
 camera_id = int(input("Enter the camera ID to use: "))
 
+# Add Subject identifier
+subject_id = input("Enter the subject ID: ")
 
 # OpenCV Video Capture
 cap = cv2.VideoCapture(camera_id)
 
 # Prepare CSV file for output
-csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks.csv', 'w', newline='')
+csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_'+subject_id+'.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z'])  # CSV header
 
@@ -66,7 +69,7 @@ while cap.isOpened():
 
             # Write each landmark (x, y, z) to CSV
             for idx, landmark in enumerate(hand_landmarks.landmark):
-                timestamp = time.time() - start_time
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
                 csv_writer.writerow([timestamp, idx, landmark.x, landmark.y, landmark.z])
 
     # Display the resulting frame

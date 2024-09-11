@@ -3,6 +3,7 @@ import mediapipe as mp
 import csv
 import time
 import numpy as np
+import datetime as datetime
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
@@ -20,8 +21,13 @@ num_cameras = 2
 # OpenCV Video Capture for multiple cameras (use as many as connected)
 cameras = [cv2.VideoCapture(i) for i in range(num_cameras)]  # Change 2 to the number of cameras you have
 
+print("Available cameras:", [cam.isOpened() for cam in cameras])
+
+# Add Subject identifier
+subject_id = input("Enter the subject ID: ")
+
 # Prepare CSV file for output
-csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_fusion.csv', 'w', newline='')
+csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_fusion_'+subject_id+'.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z', 'camera_count'])  # CSV header
 
@@ -66,7 +72,7 @@ while all([cam.isOpened() for cam in cameras]):
             fused_landmarks[idx] = landmark_sum[idx] / camera_contributions[idx]
 
             # Write to CSV
-            timestamp = time.time() - start_time
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
             csv_writer.writerow([timestamp, idx, *fused_landmarks[idx], camera_contributions[idx]])
 
     # Display frames for each camera with hand landmarks drawn
