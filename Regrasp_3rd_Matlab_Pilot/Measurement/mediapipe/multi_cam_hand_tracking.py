@@ -76,6 +76,8 @@ while all([cam.isOpened() for cam in cameras]):
             # Average landmark position
             fused_landmarks[idx] = landmark_sum[idx] / camera_contributions[idx]
 
+            # DL - openpose - github - freemocap - mediapipe - handtracking - hand_landmarks_fusion.py
+
             # Write to CSV
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
             csv_writer.writerow([timestamp, idx, *fused_landmarks[idx], camera_contributions[idx]])
