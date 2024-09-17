@@ -1,7 +1,6 @@
 import cv2
 import mediapipe as mp
 import csv
-import time
 from datetime import datetime
 
 # Initialize MediaPipe Hands
@@ -40,6 +39,13 @@ subject_id = input("Enter the subject ID: ")
 # OpenCV Video Capture
 cap = cv2.VideoCapture(camera_id)
 
+# Define the codec and create a VideoWriter object to save the video
+fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
+fps = 30.0  # Frames per second
+frame_width = int(cap.get(3))  # Frame width from the camera
+frame_height = int(cap.get(4))  # Frame height from the camera
+out = cv2.VideoWriter(f'hand_tracking_output_{subject_id}.avi', fourcc, fps, (frame_width, frame_height))
+
 # Prepare CSV file for output
 csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_'+subject_id+'.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
@@ -49,8 +55,6 @@ csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z'])  # CSV heade
 window_name = 'Hand Tracking'
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
-
-start_time = time.time()
 
 while cap.isOpened():
     success, image = cap.read()
@@ -77,6 +81,9 @@ while cap.isOpened():
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
                 csv_writer.writerow([timestamp, idx, landmark.x, landmark.y, landmark.z])
 
+    # Write the current frame to the video file
+    out.write(image)
+    
     # Display the resulting frame
     cv2.imshow('Hand Tracking', image)
 
@@ -85,5 +92,6 @@ while cap.isOpened():
 
 # Release everything when done
 cap.release()
+out.release()
 csv_file.close()
 cv2.destroyAllWindows()

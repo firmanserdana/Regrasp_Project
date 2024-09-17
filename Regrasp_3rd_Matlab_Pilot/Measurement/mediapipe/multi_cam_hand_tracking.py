@@ -18,8 +18,8 @@ mp_drawing = mp.solutions.drawing_utils
 # Initialize number of cameras
 num_cameras = 2
 
-# OpenCV Video Capture for multiple cameras (use as many as connected)
-cameras = [cv2.VideoCapture(i) for i in range(num_cameras)]  # Change 2 to the number of cameras you have
+# OpenCV Video Capture for multiple cameras
+cameras = [cv2.VideoCapture(i) for i in range(num_cameras)]
 
 print("Available cameras:", [cam.isOpened() for cam in cameras])
 
@@ -27,9 +27,22 @@ print("Available cameras:", [cam.isOpened() for cam in cameras])
 subject_id = input("Enter the subject ID: ")
 
 # Prepare CSV file for output
-csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_fusion_'+subject_id+'.csv', 'w', newline='')
+csv_file = open('hand_landmarks_fusion_'+subject_id+'.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z', 'camera_count'])  # CSV header
+
+# Define the codec and create VideoWriter objects for each camera
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+fps = 30.0
+
+# Create VideoWriters for each camera
+out_videos = []
+for cam_index, cam in enumerate(cameras):
+    frame_width = int(cam.get(3))  # Frame width from the camera
+    frame_height = int(cam.get(4))  # Frame height from the camera
+    video_filename = f'hand_tracking_output_camera_{cam_index}_{subject_id}.avi'
+    out_video = cv2.VideoWriter(video_filename, fourcc, fps, (frame_width, frame_height))
+    out_videos.append(out_video)
 
 # Create a named window and set it to normal to ensure it pops up in the front
 window_name = 'Hand Tracking'
@@ -76,18 +89,21 @@ while all([cam.isOpened() for cam in cameras]):
             # Average landmark position
             fused_landmarks[idx] = landmark_sum[idx] / camera_contributions[idx]
 
-            # DL - openpose - github - freemocap - mediapipe - handtracking - hand_landmarks_fusion.py
-
             # Write to CSV
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
             csv_writer.writerow([timestamp, idx, *fused_landmarks[idx], camera_contributions[idx]])
 
-    # Display frames for each camera with hand landmarks drawn
+    # Display frames for each camera with hand landmarks drawn and record them
     for cam_index, frame in enumerate(frames):
         if results[cam_index].multi_hand_landmarks:
             for hand_landmarks in results[cam_index].multi_hand_landmarks:
                 mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+        
+        # Show the frame for each camera
         cv2.imshow(f'Camera {cam_index}', frame)
+        
+        # Write the frame to the video file
+        out_videos[cam_index].write(frame)
 
     if cv2.waitKey(5) & 0xFF == 27:  # Press 'Esc' to exit
         break
@@ -95,5 +111,7 @@ while all([cam.isOpened() for cam in cameras]):
 # Release everything when done
 for cam in cameras:
     cam.release()
+for out_video in out_videos:
+    out_video.release()
 csv_file.close()
 cv2.destroyAllWindows()
