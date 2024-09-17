@@ -3,7 +3,7 @@ import mediapipe as mp
 import csv
 import time
 import numpy as np
-import datetime as datetime
+from datetime import datetime
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
@@ -15,19 +15,40 @@ hands = mp_hands.Hands(static_image_mode=False,
 # Initialize MediaPipe Drawing
 mp_drawing = mp.solutions.drawing_utils
 
-# Initialize number of cameras
-num_cameras = 2
+# Function to list available cameras
+def list_available_cameras(max_cameras=10):
+    available_cameras = []
+    for camera_id in range(max_cameras):
+        cap = cv2.VideoCapture(camera_id)
+        if cap.isOpened():
+            available_cameras.append(camera_id)
+            cap.release()
+    return available_cameras
 
-# OpenCV Video Capture for multiple cameras
-cameras = [cv2.VideoCapture(i) for i in range(num_cameras)]
+# List available cameras
+available_cameras = list_available_cameras()
+print("Available cameras:", available_cameras)
 
-print("Available cameras:", [cam.isOpened() for cam in cameras])
+# Get user input for selecting cameras
+selected_cameras = input("Enter the camera IDs to use (comma-separated): ")
+selected_camera_ids = [int(cam_id.strip()) for cam_id in selected_cameras.split(',')]
+
+# OpenCV Video Capture for selected cameras
+cameras = [cv2.VideoCapture(i) for i in selected_camera_ids]
+
+# Check if cameras are opened successfully
+for i, cam in enumerate(cameras):
+    if not cam.isOpened():
+        print(f"Camera {selected_camera_ids[i]} could not be opened.")
+    else:
+        print(f"Camera {selected_camera_ids[i]} is opened successfully.")
+
 
 # Add Subject identifier
 subject_id = input("Enter the subject ID: ")
 
 # Prepare CSV file for output
-csv_file = open('hand_landmarks_fusion_'+subject_id+'.csv', 'w', newline='')
+csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_fusion_'+subject_id+'.csv', 'w', newline='')
 csv_writer = csv.writer(csv_file)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z', 'camera_count'])  # CSV header
 
@@ -40,7 +61,7 @@ out_videos = []
 for cam_index, cam in enumerate(cameras):
     frame_width = int(cam.get(3))  # Frame width from the camera
     frame_height = int(cam.get(4))  # Frame height from the camera
-    video_filename = f'hand_tracking_output_camera_{cam_index}_{subject_id}.avi'
+    video_filename = f'Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_tracking_output_camera_{cam_index}_{subject_id}.avi'
     out_video = cv2.VideoWriter(video_filename, fourcc, fps, (frame_width, frame_height))
     out_videos.append(out_video)
 

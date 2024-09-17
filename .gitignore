@@ -40,3 +40,5 @@ logfile.mtb
 *.csv
 
 .conda/
+
+*.avi

@@ -44,7 +44,7 @@ fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change codec (e.g., 'XVID', 
 fps = 30.0  # Frames per second
 frame_width = int(cap.get(3))  # Frame width from the camera
 frame_height = int(cap.get(4))  # Frame height from the camera
-out = cv2.VideoWriter(f'hand_tracking_output_{subject_id}.avi', fourcc, fps, (frame_width, frame_height))
+out = cv2.VideoWriter(f'Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_tracking_output_{subject_id}.avi', fourcc, fps, (frame_width, frame_height))
 
 # Prepare CSV file for output
 csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_'+subject_id+'.csv', 'w', newline='')
