@@ -54,10 +54,13 @@ classdef xsensimus_handler < handle
                 data = splitlines(data);
                 data = data(end-1);
 
-                % Split the received data into roll, pitch, and yaw values
-                sensor_data = str2double(strsplit(data)); % Assuming data is space-separated
+                % Split the received data into device id, roll, pitch, and yaw values
+                temp_data = split(data, ',');
+                sensor_data = str2double(temp_data(2:4));
+                device_id = temp_data(1);
                 
-                % Extract roll, pitch, and yaw values
+                % Extract device id, roll, pitch, and yaw values
+                obj.device_id = device_id;
                 obj.roll = sensor_data(1);
                 obj.pitch = sensor_data(2);
                 obj.yaw = sensor_data(3);

@@ -171,8 +171,8 @@ function xsens_windows(host, port)
                     if h.XsDataPacket_containsOrientation(dataPacket)
                         oriC = cell2mat(h.XsDataPacket_orientationEuler_1(dataPacket));
     
-                        % Format the orientation values as a comma-separated string
-                        formattedString = sprintf('%.6f %.6f %.6f', oriC(1), oriC(2), oriC(3));
+                        % Format the orientation values as a comma-separated string and mention the device ID
+                        formattedString = sprintf('%s,%f,%f,%f', devIdUsed{iDev}, oriC(1), oriC(2), oriC(3));
     
                         % Write the formatted string to tcpServer
                         tcpServer.writeline(formattedString);
