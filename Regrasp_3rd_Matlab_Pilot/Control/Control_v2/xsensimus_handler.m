@@ -12,6 +12,9 @@ classdef xsensimus_handler < handle
 
         pitch;
         propCmd;
+        roll;
+        yaw;
+        device_id;
 
     end
 
@@ -75,12 +78,12 @@ classdef xsensimus_handler < handle
         function processData(obj, paramsGUI)
 
             % Only process data if pitch, roll and yaw are within calibration limits
-            if obj.roll < paramsGUI.minRoll || obj.roll > paramsGUI.maxRoll || ...
-                    obj.yaw < paramsGUI.minYaw || obj.yaw > paramsGUI.maxYaw || ...
-                    obj.pitch < paramsGUI.minPitch || obj.pitch > paramsGUI.maxPitch
-                    disp('Imu values are out of calibration limits, ensure patient is in correct position');
-                    return;
-            end
+            % if any(obj.roll < paramsGUI.minRoll) || any(obj.roll > paramsGUI.maxRoll) || ...
+            %         any(obj.yaw < paramsGUI.minYaw) || any(obj.yaw > paramsGUI.maxYaw) || ...
+            %         any(obj.pitch < paramsGUI.minPitch) || any(obj.pitch > paramsGUI.maxPitch)
+            %     disp('Imu values are out of calibration limits, ensure patient is in correct position');
+            %     return;
+            % end
             % Compute proportional command by normalizing pich data to
             % calibration minimum and maximum
             obj.propCmd = (obj.pitch - paramsGUI.minPitch) / (paramsGUI.maxPitch - paramsGUI.minPitch);
