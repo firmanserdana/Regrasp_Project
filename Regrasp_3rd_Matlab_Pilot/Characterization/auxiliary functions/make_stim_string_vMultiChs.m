@@ -55,7 +55,22 @@ switch mode
         PL = ones(size(elec));
 
         cmdDelay = stim_params(:,contains(stim_params_name,'Delay'))*1e-3; % [s]
+        
+        % Sort the commands depending on the burst delay
+        [~,idxSort] = sort(cmdDelay);
+        elec = elec(idxSort);
+        amp = amp(idxSort);
+        amp_steps = amp_steps(idxSort);
+        PW = PW(idxSort);
+        freq = freq(idxSort);
+        TL = TL(idxSort);
+        TD = TD(idxSort);
+        FS = FS(idxSort);
+        PL = PL(idxSort);
+        cmdDelay = cmdDelay(idxSort);
+        cmdDelay = [cmdDelay(1) diff(cmdDelay)];
 
+        % Make the stim string
         for iE = 1:length(elec)
 
             if amp(iE)*PW(iE)*1e3 > safeLimit
