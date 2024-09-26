@@ -2,6 +2,14 @@ import cv2
 import mediapipe as mp
 import csv
 from datetime import datetime
+import sys
+import os
+
+if len(sys.argv) != 2:
+    print("Usage: python3 hand_tracking.py <camera_id>")
+    sys.exit(1)
+
+camera_id = int(sys.argv[1])
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
@@ -13,42 +21,60 @@ hands = mp_hands.Hands(static_image_mode=False,
 # Initialize MediaPipe Drawing
 mp_drawing = mp.solutions.drawing_utils
 
-# Get list of available cameras
-def list_available_cameras(max_cameras=10):
-    available_cameras = []
-    for camera_id in range(max_cameras):
-        cap = cv2.VideoCapture(camera_id)
-        if cap.isOpened():
-            available_cameras.append(camera_id)
-            cap.release()
-    return available_cameras
-
-if __name__ == "__main__":
-    cameras = list_available_cameras()
-    if cameras:
-        print("Available cameras:", cameras)
-    else:
-        print("No cameras found.")
-
-# Select the camera to use by user input
-camera_id = int(input("Enter the camera ID to use: "))
-
-# Add Subject identifier
-subject_id = input("Enter the subject ID: ")
-
 # OpenCV Video Capture
 cap = cv2.VideoCapture(camera_id)
+
+# Prepare directories and file names
+output_dir = 'Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/recordings'
+os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
+
+# Function to increment file name
+def get_incremented_filename(base_path, extension):
+    file_number = 1
+    while os.path.exists(f'{base_path}_{file_number}.{extension}'):
+        file_number += 1
+    return f'{base_path}_{file_number}.{extension}'
+
+# Function to compute the recording number for the filename
+def compute_rec_number(save_path, date_str):
+    # List all files in the directory
+    file_list = os.listdir(save_path)
+    
+    # Filter files that contain today's date
+    files_today = [f for f in file_list if date_str in f]
+    
+    # Extract recording numbers from filenames
+    rec_numbers = []
+    for file_name in files_today:
+        match = re.search(r'rec(\d+)', file_name)
+        if match:
+            rec_numbers.append(int(match.group(1)))
+
+    # Determine the highest recording number
+    if rec_numbers:
+        max_rec_number = max(rec_numbers)
+    else:
+        max_rec_number = 0
+    
+    # Return the next available recording number
+    return max_rec_number + 1
+
+# Get file paths with incremented numbers
+time_record = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+base_filename = os.path.join(output_dir, f'hand_tracking_output_cam-{camera_id}_{time_record}')
+video_file = get_incremented_filename(base_filename, 'avi')
+csv_file = get_incremented_filename(base_filename.replace('output', 'landmarks'), 'csv')
 
 # Define the codec and create a VideoWriter object to save the video
 fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
 fps = 30.0  # Frames per second
 frame_width = int(cap.get(3))  # Frame width from the camera
 frame_height = int(cap.get(4))  # Frame height from the camera
-out = cv2.VideoWriter(f'Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_tracking_output_{subject_id}.avi', fourcc, fps, (frame_width, frame_height))
+out = cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
 
 # Prepare CSV file for output
-csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_'+subject_id+'.csv', 'w', newline='')
-csv_writer = csv.writer(csv_file)
+csv_file_handle = open(csv_file, 'w', newline='')
+csv_writer = csv.writer(csv_file_handle)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z'])  # CSV header
 
 # Create a named window and set it to normal to ensure it pops up in the front
@@ -85,7 +111,7 @@ while cap.isOpened():
     out.write(image)
     
     # Display the resulting frame
-    cv2.imshow('Hand Tracking', image)
+    cv2.imshow(window_name, image)
 
     if cv2.waitKey(5) & 0xFF == 27:  # Press 'Esc' to exit
         break
@@ -93,5 +119,5 @@ while cap.isOpened():
 # Release everything when done
 cap.release()
 out.release()
-csv_file.close()
+csv_file_handle.close()
 cv2.destroyAllWindows()
