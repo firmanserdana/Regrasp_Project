@@ -41,7 +41,7 @@ cap = cv2.VideoCapture(camera_id)
 
 # Define the codec and create a VideoWriter object to save the video
 fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
-fps = 30.0  # Frames per second
+fps = 60.0  # Frames per second
 frame_width = int(cap.get(3))  # Frame width from the camera
 frame_height = int(cap.get(4))  # Frame height from the camera
 out = cv2.VideoWriter(f'Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_tracking_output_{subject_id}.avi', fourcc, fps, (frame_width, frame_height))
@@ -57,13 +57,14 @@ cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
 
 while cap.isOpened():
+    # Read high frame rate video from camera
     success, image = cap.read()
     if not success:
         print("Ignoring empty camera frame.")
         continue
 
     # Flip the image horizontally for a later selfie-view display
-    image = cv2.flip(image, 1)
+    # image = cv2.flip(image, 1)
 
     # Convert the BGR image to RGB
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
