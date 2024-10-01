@@ -38,3 +38,5 @@ To run mediapipe
 5. Push enter to start script, wait for the windows to appear
 6. Press Esc in each windows to stop recordings.
 7. All data will be inside Data folder
+
+todo: https://stackoverflow.com/questions/76325975/how-to-make-the-hand-detection-of-mediapipe-work-on-hand-with-gloves to make sure the covered hand can still be detected
