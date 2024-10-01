@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Device Name="SESSANTAQUATTRO+" DeviceTotalChannels="16" Model="10008" IPAddress="192.168.1.1" PreampGain="0" Sources="1" SampleFrequency="2000" Resolution="2" Firmware="Unknown">
+  <Channels>
+    <Adapter ID="AD8x1SP" Description="8 channels adapter bipolar acquisition" DetectionMode="1" LowPassFilter="0" HighPassFilter="0" Gain="5" AdapterIndex="0" ChannelStartIndex="0">
+      <Channel ID="General" Prefix="IN 1 (Channel 1) - " Description="General purpose sensor" Gain="1" Index="0" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="General" Prefix="IN 1 (Channel 2) - " Description="General purpose sensor" Gain="1" Index="1" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="General" Prefix="IN 1 (Channel 3) - " Description="General purpose sensor" Gain="1" Index="2" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="General" Prefix="IN 1 (Channel 4) - " Description="General purpose sensor" Gain="1" Index="3" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="General" Prefix="IN 1 (Channel 5) - " Description="General purpose sensor" Gain="1" Index="4" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="General" Prefix="IN 1 (Channel 6) - " Description="General purpose sensor" Gain="1" Index="5" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="General" Prefix="IN 1 (Channel 7) - " Description="General purpose sensor" Gain="1" Index="6" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="General" Prefix="IN 1 (Channel 8) - " Description="General purpose sensor" Gain="1" Index="7" Muscle="Not defined" Side="Not Defined" />
+    </Adapter>
+    <Adapter ID="Direct connection to Auxiliary Input" Description="Direct connection to Auxiliary Input" Gain="0.5" HighPassFilter="0" LowPassFilter="100000" DetectionMode="0" AdapterIndex="1" ChannelStartIndex="0" AuxScaleFactor="0" UnitOfMeasurement="">
+      <Channel ID="AUX  Acceleration" Prefix="MustBeDeleted" Description="Accelerometer Transducer" Gain="1" Index="0" Muscle="Not defined" Side="Not Defined" />
+    </Adapter>
+    <Adapter ID="Direct connection to Auxiliary Input" Description="Direct connection to Auxiliary Input" Gain="0.5" HighPassFilter="0" LowPassFilter="100000" DetectionMode="0" AdapterIndex="2" ChannelStartIndex="0" AuxScaleFactor="0" UnitOfMeasurement="">
+      <Channel ID="AUX  Acceleration" Prefix="MustBeDeleted" Description="Accelerometer Transducer" Gain="1" Index="0" Muscle="Not defined" Side="Not Defined" />
+    </Adapter>
+    <Adapter ID="AdapterQuaternions" Description="Adapter to contain 4 quaternion signal" DetectionMode="0" LowPassFilter="0" HighPassFilter="0" Gain="1" AdapterIndex="3" ChannelStartIndex="0">
+      <Channel ID="Quaternion" Prefix="" Description="Quaternion" Gain="1" Index="0" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="Quaternion" Prefix="" Description="Quaternion" Gain="1" Index="1" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="Quaternion" Prefix="" Description="Quaternion" Gain="1" Index="2" Muscle="Not defined" Side="Not Defined" />
+      <Channel ID="Quaternion" Prefix="" Description="Quaternion" Gain="1" Index="3" Muscle="Not defined" Side="Not Defined" />
+    </Adapter>
+    <Adapter ID="AdapterControl" Description="AdapterControl" DetectionMode="0" LowPassFilter="0" HighPassFilter="0" Gain="1" AdapterIndex="4" ChannelStartIndex="0">
+      <Channel ID="BufferChannel" Prefix="" Description="Buffer Channel" Gain="1" Index="0" Muscle="Not defined" Side="Not Defined" />
+    </Adapter>
+    <Adapter ID="AdapterControl" Description="AdapterControl" DetectionMode="0" LowPassFilter="0" HighPassFilter="0" Gain="1" AdapterIndex="5" ChannelStartIndex="0">
+      <Channel ID="RampChannel" Prefix="" Description="Ramp Channel" Gain="1" Index="0" Muscle="Not defined" Side="Not Defined" />
+    </Adapter>
+  </Channels>
+</Device>
