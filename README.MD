@@ -1,5 +1,12 @@
 # Step by step regrasp
 
+## Characterization
+1. Run the matlab code by opening `interface_characterization_v2` app design file
+2. In the Save tab, ensure the filename and click record
+3. Go to Stimulation tab, and choose the way you want to stimulate the hand
+4. Open terminal and run mediapipe protocols (see Run Mediapipe)
+5. On the app designer, click stimulate button
+
 ## Running xsens_windows
 
 To run `xsens_windows`, follow these steps:
