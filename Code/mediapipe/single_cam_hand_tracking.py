@@ -5,11 +5,13 @@ from datetime import datetime
 import sys
 import os
 
-if len(sys.argv) != 2:
-    print("Usage: python3 hand_tracking.py <camera_id>")
+# Check for the correct number of arguments
+if len(sys.argv) != 3:
+    print("Usage: python single_cam_hand_tracking.py <camera_id> <recording_notes>")
     sys.exit(1)
 
 camera_id = int(sys.argv[1])
+recording_notes = str(sys.argv[2])
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
@@ -21,47 +23,27 @@ hands = mp_hands.Hands(static_image_mode=False,
 # Initialize MediaPipe Drawing
 mp_drawing = mp.solutions.drawing_utils
 
+
 # OpenCV Video Capture
 cap = cv2.VideoCapture(camera_id)
 
 # Prepare directories and file names
-output_dir = 'Data\mediapipe'
+output_dir = r'Data'
 os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
-# Function to increment file name
+# Function to increment file name based on the filename which based on the current date and time
 def get_incremented_filename(base_path, extension):
+    timestamp, basename = os.path.splitext(base_path)[0].rsplit('_', 1)
+
     file_number = 1
-    while os.path.exists(f'{base_path}_{file_number}.{extension}'):
+    while os.path.exists(f'{timestamp}_{basename}{file_number}.{extension}'):
         file_number += 1
-    return f'{base_path}_{file_number}.{extension}'
+    return f'{timestamp}_{basename}{file_number}.{extension}'
 
-# Function to compute the recording number for the filename
-def compute_rec_number(save_path, date_str):
-    # List all files in the directory
-    file_list = os.listdir(save_path)
-    
-    # Filter files that contain today's date
-    files_today = [f for f in file_list if date_str in f]
-    
-    # Extract recording numbers from filenames
-    rec_numbers = []
-    for file_name in files_today:
-        match = re.search(r'rec(\d+)', file_name)
-        if match:
-            rec_numbers.append(int(match.group(1)))
-
-    # Determine the highest recording number
-    if rec_numbers:
-        max_rec_number = max(rec_numbers)
-    else:
-        max_rec_number = 0
-    
-    # Return the next available recording number
-    return max_rec_number + 1
 
 # Get file paths with incremented numbers
-time_record = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-base_filename = os.path.join(output_dir, f'hand_tracking_output_cam-{camera_id}_{time_record}')
+time_record = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+base_filename = os.path.join(output_dir, f'{time_record}_hand-tracking-output-cam-{camera_id}-rec')
 video_file = get_incremented_filename(base_filename, 'avi')
 csv_file = get_incremented_filename(base_filename.replace('output', 'landmarks'), 'csv')
 
@@ -87,9 +69,14 @@ while cap.isOpened():
     if not success:
         print("Ignoring empty camera frame.")
         continue
+     # Add recording notes to the frame
+    cv2.putText(image, recording_notes, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
+    
+    # Add more text details to the frame
+    
 
     # Flip the image horizontally for a later selfie-view display
-    image = cv2.flip(image, 1)
+    # image = cv2.flip(image, 1)
 
     # Convert the BGR image to RGB
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
