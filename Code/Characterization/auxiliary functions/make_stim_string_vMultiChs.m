@@ -1,7 +1,6 @@
-function [stim_string,safe,cmdDelay,cmdTotDuration] = make_stim_string_vMultiChs(mode,stim_params,stim_params_name,safeLimit,stimChsID)
+function [stim_string,safe,cmdDelay,cmdTotDuration] = make_stim_string_vMultiChs(mode,stim_params,stim_params_name,safeLimit,stimChsID,amp_step_size)
 
 safe = 1;               % flag for stim SAFE = below safety limits
-amp_step_size = 10;    % [uA]   TO CHECK THIIIIIIIIS for Summit
 
 % Components of stim string
 elec_string = 'Elect='; % electrode
@@ -29,7 +28,7 @@ switch mode
         TL = 1000 * ones(size(elec));                               % [ms]
         TD = zeros(size(elec));                                     % [ms]
         FS = zeros(size(elec));
-        PL = ones(size(elec));
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
 
         if ~isempty(find(amp.*PW*1e3 > safeLimit))
             safe = 0;
@@ -52,10 +51,10 @@ switch mode
         TL = stim_params(:,contains(stim_params_name,'Dur'));       % [ms]
         TD = zeros(size(elec));                                     % [ms]
         FS = zeros(size(elec));
-        PL = ones(size(elec));
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
 
         cmdDelay = stim_params(:,contains(stim_params_name,'Delay'))*1e-3; % [s]
-        
+
         % Sort the commands depending on the burst delay
         [~,idxSort] = sort(cmdDelay);
         elec = elec(idxSort);
@@ -97,7 +96,7 @@ switch mode
         TL = reps./freq*1e3;                                            % [ms]
         TD = zeros(size(elec));                                         % [ms]
         FS = zeros(size(elec));
-        PL = ones(size(elec));
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
 
         for iA = 1:n_incr
 
@@ -135,7 +134,7 @@ switch mode
         IBI = stim_params(:,contains(stim_params_name,'IBI'));          % [ms]
         TD = zeros(size(elec));
         FS = zeros(size(elec));
-        PL = ones(size(elec));
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
 
         for iA = 1:n_incr
 
@@ -177,7 +176,7 @@ switch mode
         IBI = stim_params(:,contains(stim_params_name,'IBI'));          % [ms]
         TD = zeros(size(elec));
         FS = zeros(size(elec));
-        PL = ones(size(elec));
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
         cmdDelay = (TL+IBI)*1e-3;                                       % [s]
 
         if ~isempty(find(amp.*PW*1e3 > safeLimit))
@@ -212,8 +211,8 @@ switch mode
         TL = stim_params(:,contains(stim_params_name,'Dur'))*1e3;       % [ms]
         TD = zeros(size(elec));                                         % [ms]
         FS = zeros(size(elec));
-        PL = ones(size(elec));
-        
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
+
         if ~isempty(find(amp.*PW*1e3 > safeLimit))
             safe = 0;
         end
@@ -225,6 +224,53 @@ switch mode
 
         cmdDelay = 0;
 
+    case 'AMSine'
+
+        elec = stim_params(:,contains(stim_params_name,'Ch'));
+        amp_min = stim_params(:,contains(stim_params_name,'min amp'));      % [uA]
+        amp_max = stim_params(:,contains(stim_params_name,'max amp'));      % [uA]
+        PW = stim_params(:,contains(stim_params_name,'PW'))*1e-3;           % [ms]
+        freq = stim_params(:,contains(stim_params_name,'Freq'));            % [Hz]
+        sine_period = stim_params(:,contains(stim_params_name,'period'));   % [s]
+        Dur = stim_params(:,contains(stim_params_name,'Dur'));              % [s]
+        TL = 1000 * ones(size(elec));                                       % [ms]
+        TD = zeros(size(elec));                                             % [ms]
+        FS = zeros(size(elec));
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
+        
+        % Build the sine waves 
+        dt = 1/min(freq); % seconds per sample
+        t = (0:dt:Dur); % seconds
+        
+        amp_wave = [];
+
+        for iE = 1:length(elec)
+            F = 1/sine_period(iE); % Sine wave frequency (hertz)
+            amp_wave(iE,:) = (amp_max(iE)+amp_min(iE))/2 + (amp_max(iE)-amp_min(iE))/2 .* sin(2*pi*F*t);
+        end
+
+        % create the stim command
+        for iA = 1:size(amp_wave,2)
+
+            amp = amp_wave(:,iA);                           % [uA]
+            amp_steps = floor(amp / amp_step_size);         % [steps]
+
+            if ~isempty(find(amp.*PW*1e3 > safeLimit))
+                safe = 0;
+                break;
+            end
+
+            stim_string{iA} = [elec_string cstr(stimChsID(elec)) ',;' TL_string cstr(TL) ',;' ...
+                freq_string cstr(freq) ',;' PW_string cstr(PW) ',;' ...
+                amp_string cstr(amp_steps) ',;' TD_string cstr(TD) ',;' ...
+                FS_string cstr(FS) ',;' PL_string cstr(PL) ',;'];
+
+            if iA==1
+                cmdDelay(iA) = 0;                                       % [s]
+            else
+                cmdDelay(iA) = dt;                                      % [s]
+            end
+        end
 end
 
 % Compute total duration of stim command

@@ -42,3 +42,11 @@ logfile.mtb
 .conda/
 
 *.avi
+
+*.txt
+
+*.nev
+
+*.ns2
+
+*.cache

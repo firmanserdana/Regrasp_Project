@@ -40,7 +40,7 @@ foreach ($camera_id in $selected_cameras -split ' ') {
         # Use Start-Job to run the Python scripts concurrently
         $job = Start-Job -ScriptBlock {
             param($id)
-            python "Regrasp_3rd_Matlab_Pilot\Measurement\mediapipe\single_cam_hand_tracking.py" $id
+            python "Code\mediapipe\single_cam_hand_tracking.py" $id
         } -ArgumentList $camera_id
         
         # Add the job to the collection

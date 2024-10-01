@@ -58,11 +58,11 @@ classdef rippleEMG_handler < handle
         %% Read data
         function receiveData(obj)
 
-            pause(obj.readWind-toc(obj.timeReadStep))
+            %pause(obj.readWind-toc(obj.timeReadStep))
 
             obj.data = xippmex('cont',obj.EMGchsID(obj.EMGchC),obj.readWind*1000,'hi-res');
 
-            obj.timeReadStep = tic;
+            %obj.timeReadStep = tic;
 
             % Deal with packet loss
             obj.data(find(obj.data<-1000)) = 0; % packet loss
