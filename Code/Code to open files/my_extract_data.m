@@ -5,13 +5,13 @@ clc
 addpath(genpath('C:\Program Files (x86)\Ripple\Trellis\Tools'))
 
 %
-stimEN = 1;
+stimEN = 0;
 emgEN = 0;
-pressureEN = 0;
+pressureEN = 1;
 
 %
-dataFolder = 'C:\Users\firmansssa\Desktop\Elena\Code Regrap\Final code\Characterization\';
-fileName = '2024-09-25-16-58-47-rec3';
+dataFolder = 'C:\Users\m.ceradini\Desktop\Elena\Code Regrap\Rewire_Project\Data\';
+fileName = 'pinch-0-20N.nev';
 
 
 %%

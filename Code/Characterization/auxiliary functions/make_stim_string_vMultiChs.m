@@ -67,7 +67,7 @@ switch mode
         FS = FS(idxSort);
         PL = PL(idxSort);
         cmdDelay = cmdDelay(idxSort);
-        cmdDelay = [cmdDelay(1) diff(cmdDelay)];
+        cmdDelay = [cmdDelay(1) ; diff(cmdDelay)];
 
         % Make the stim string
         for iE = 1:length(elec)
@@ -233,15 +233,15 @@ switch mode
         freq = stim_params(:,contains(stim_params_name,'Freq'));            % [Hz]
         sine_period = stim_params(:,contains(stim_params_name,'period'));   % [s]
         Dur = stim_params(:,contains(stim_params_name,'Dur'));              % [s]
-        TL = 1000 * ones(size(elec));                                       % [ms]
+        TL = 1.5 ./freq  .* ones(size(elec)) * 1000;                        % [ms]
         TD = zeros(size(elec));                                             % [ms]
         FS = zeros(size(elec));
         PL = stim_params(:,contains(stim_params_name,'cathodic'));
-        
-        % Build the sine waves 
+
+        % Build the sine waves
         dt = 1/min(freq); % seconds per sample
         t = (0:dt:Dur); % seconds
-        
+
         amp_wave = [];
 
         for iE = 1:length(elec)

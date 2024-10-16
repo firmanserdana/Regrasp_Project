@@ -50,3 +50,9 @@ logfile.mtb
 *.ns2
 
 *.cache
+
+*.mp4
+
+*.ns5
+
+Data/
