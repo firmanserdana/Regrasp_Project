@@ -4,6 +4,7 @@ import csv
 from datetime import datetime
 import sys
 import os
+import time
 
 # Check for the correct number of arguments
 if len(sys.argv) != 3:
@@ -34,8 +35,6 @@ cap = cv2.VideoCapture(camera_id)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
 
-
-
 # Prepare directories and file names
 output_dir = r'Data'
 os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
@@ -43,12 +42,10 @@ os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 # Function to increment file name based on the filename which based on the current date and time
 def get_incremented_filename(base_path, extension):
     timestamp, basename = os.path.splitext(base_path)[0].rsplit('_', 1)
-
     file_number = 1
     while os.path.exists(f'{timestamp}_{basename}{file_number}.{extension}'):
         file_number += 1
     return f'{timestamp}_{basename}{file_number}.{extension}'
-
 
 # Get file paths with incremented numbers
 time_record = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -73,16 +70,21 @@ window_name = 'Hand Tracking'
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
 
+# Calculate the time interval between frames
+frame_interval = 1.0 / fps
+
 while cap.isOpened():
+    start_time = time.time()
+    
     success, image = cap.read()
     if not success:
         print("Ignoring empty camera frame.")
         continue
-     # Add recording notes to the frame
+    
+    # Add recording notes to the frame
     cv2.putText(image, recording_notes, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
     
     # Add more text details to the frame
-    
 
     # Flip the image horizontally for a later selfie-view display
     # image = cv2.flip(image, 1)
@@ -93,11 +95,9 @@ while cap.isOpened():
     # Process the image and find hands
     result = hands.process(image_rgb)
 
-    # Draw hand landmarks and save to CSV if hands are found
+    # Save landmarks to CSV if hands are found
     if result.multi_hand_landmarks:
         for hand_landmarks in result.multi_hand_landmarks:
-            mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
             # Write each landmark (x, y, z) to CSV
             for idx, landmark in enumerate(hand_landmarks.landmark):
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -108,6 +108,12 @@ while cap.isOpened():
     
     # Display the resulting frame
     cv2.imshow(window_name, image)
+
+    # Calculate the time taken to process the frame
+    elapsed_time = time.time() - start_time
+    # Sleep for the remaining time to maintain the desired frame rate
+    if elapsed_time < frame_interval:
+        time.sleep(frame_interval - elapsed_time)
 
     if cv2.waitKey(5) & 0xFF == 27:  # Press 'Esc' to exit
         break
