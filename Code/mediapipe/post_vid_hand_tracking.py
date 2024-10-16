@@ -2,16 +2,24 @@ import cv2
 import mediapipe as mp
 import csv
 from datetime import datetime
-import sys
 import os
+import tkinter as tk
+from tkinter import filedialog
 
-# Check for the correct number of arguments
-if len(sys.argv) != 3:
-    print("Usage: python single_cam_hand_tracking.py <camera_id> <recording_notes>")
-    sys.exit(1)
+# Initialize the file dialog
+root = tk.Tk()
+root.withdraw()  # Hide the root window
 
-camera_id = int(sys.argv[1])
-recording_notes = str(sys.argv[2])
+# Open file dialog to select video file
+video_path = filedialog.askopenfilename(
+    title="Select a video file",
+    filetypes=[("Video Files", "*.mp4;*.avi;*.mov;*.mkv"), ("All Files", "*.*")]
+)
+
+# Check if a file was selected
+if not video_path:
+    print("No video file selected. Exiting.")
+    exit()
 
 # Initialize MediaPipe Hands
 mp_hands = mp.solutions.hands
@@ -23,24 +31,14 @@ hands = mp_hands.Hands(static_image_mode=False,
 # Initialize MediaPipe Drawing
 mp_drawing = mp.solutions.drawing_utils
 
-# Set desired resolution before starting the video capture loop
-desired_width = 1920  # Replace with your desired width
-desired_height = 1080  # Replace with your desired height
-
 # OpenCV Video Capture
-cap = cv2.VideoCapture(camera_id)
-
-# Set the resolution for the capture
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
-
-
+cap = cv2.VideoCapture(video_path)
 
 # Prepare directories and file names
 output_dir = r'Data'
 os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
-# Function to increment file name based on the filename which based on the current date and time
+# Function to increment file name based on the filename which is based on the current date and time
 def get_incremented_filename(base_path, extension):
     timestamp, basename = os.path.splitext(base_path)[0].rsplit('_', 1)
 
@@ -52,15 +50,15 @@ def get_incremented_filename(base_path, extension):
 
 # Get file paths with incremented numbers
 time_record = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-base_filename = os.path.join(output_dir, f'{time_record}_hand-tracking-output-cam-{camera_id}-rec')
+base_filename = os.path.join(output_dir, f'{time_record}_hand-tracking-output')
 video_file = get_incremented_filename(base_filename, 'avi')
 csv_file = get_incremented_filename(base_filename.replace('output', 'landmarks'), 'csv')
 
 # Define the codec and create a VideoWriter object to save the video
-fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
-fps = 60.0  # Frames per second
-frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
+fps = cap.get(cv2.CAP_PROP_FPS)  # Get the original FPS from the video
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # Frame width from the video
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # Frame height from the video
 out = cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
 
 # Prepare CSV file for output
@@ -68,23 +66,17 @@ csv_file_handle = open(csv_file, 'w', newline='')
 csv_writer = csv.writer(csv_file_handle)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z'])  # CSV header
 
-# Create a named window and set it to normal to ensure it pops up in the front
+# Create a named window for displaying the video
 window_name = 'Hand Tracking'
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
 
 while cap.isOpened():
     success, image = cap.read()
     if not success:
-        print("Ignoring empty camera frame.")
-        continue
-     # Add recording notes to the frame
-    cv2.putText(image, recording_notes, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
-    
-    # Add more text details to the frame
-    
+        print("Video processing completed.")
+        break
 
-    # Flip the image horizontally for a later selfie-view display
+    # Flip the image horizontally for a selfie-view display (optional)
     # image = cv2.flip(image, 1)
 
     # Convert the BGR image to RGB
@@ -105,7 +97,7 @@ while cap.isOpened():
 
     # Write the current frame to the video file
     out.write(image)
-    
+
     # Display the resulting frame
     cv2.imshow(window_name, image)
 
