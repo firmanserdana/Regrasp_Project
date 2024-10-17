@@ -2,16 +2,9 @@ import cv2
 import mediapipe as mp
 import csv
 from datetime import datetime
-
-# Initialize MediaPipe Hands
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=False,
-                       max_num_hands=1,
-                       min_detection_confidence=0.5,
-                       min_tracking_confidence=0.5)
-
-# Initialize MediaPipe Drawing
-mp_drawing = mp.solutions.drawing_utils
+import sys
+import os
+import time
 
 # Get list of available cameras
 def list_available_cameras(max_cameras=10):
@@ -34,21 +27,57 @@ if __name__ == "__main__":
 camera_id = int(input("Enter the camera ID to use: "))
 
 # Add Subject identifier
-subject_id = input("Enter the subject ID: ")
+recording_notes = input("Enter recording notes - Enter to skip: ")
+
+# Initialize MediaPipe Hands
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(static_image_mode=False,
+                       max_num_hands=1,
+                       min_detection_confidence=0.5,
+                       min_tracking_confidence=0.5)
+
+# Initialize MediaPipe Drawing
+mp_drawing = mp.solutions.drawing_utils
+
+# Set desired resolution before starting the video capture loop
+desired_width = 1920  # Replace with your desired width
+desired_height = 1080  # Replace with your desired height
 
 # OpenCV Video Capture
 cap = cv2.VideoCapture(camera_id)
 
+# Set the resolution for the capture
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
+
+# Prepare directories and file names
+output_dir = r'Data'
+os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
+
+# Function to increment file name based on the filename which based on the current date and time
+def get_incremented_filename(base_path, extension):
+    timestamp, basename = os.path.splitext(base_path)[0].rsplit('_', 1)
+    file_number = 1
+    while os.path.exists(f'{timestamp}_{basename}{file_number}.{extension}'):
+        file_number += 1
+    return f'{timestamp}_{basename}{file_number}.{extension}'
+
+# Get file paths with incremented numbers
+time_record = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+base_filename = os.path.join(output_dir, f'{time_record}_hand-tracking-output-cam-{camera_id}-rec')
+video_file = get_incremented_filename(base_filename, 'avi')
+csv_file = get_incremented_filename(base_filename.replace('output', 'landmarks'), 'csv')
+
 # Define the codec and create a VideoWriter object to save the video
-fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
-fps = 60.0  # Frames per second
-frame_width = int(cap.get(3))  # Frame width from the camera
-frame_height = int(cap.get(4))  # Frame height from the camera
-out = cv2.VideoWriter(f'Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_tracking_output_{subject_id}.avi', fourcc, fps, (frame_width, frame_height))
+fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
+fps = 30.0  # Frames per second
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+out = cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
 
 # Prepare CSV file for output
-csv_file = open('Regrasp_3rd_Matlab_Pilot/Measurement/mediapipe/hand_landmarks_'+subject_id+'.csv', 'w', newline='')
-csv_writer = csv.writer(csv_file)
+csv_file_handle = open(csv_file, 'w', newline='')
+csv_writer = csv.writer(csv_file_handle)
 csv_writer.writerow(['timestamp', 'landmark_index', 'x', 'y', 'z'])  # CSV header
 
 # Create a named window and set it to normal to ensure it pops up in the front
@@ -56,12 +85,22 @@ window_name = 'Hand Tracking'
 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
 
+# Calculate the time interval between frames
+frame_interval = 1.0 / fps
+
 while cap.isOpened():
-    # Read high frame rate video from camera
+    start_time = time.time()
+    
     success, image = cap.read()
     if not success:
         print("Ignoring empty camera frame.")
         continue
+    
+    # Add recording notes to the frame
+    cv2.putText(image, time_record, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
+    cv2.putText(image, recording_notes, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
+    
+    # Add more text details to the frame
 
     # Flip the image horizontally for a later selfie-view display
     # image = cv2.flip(image, 1)
@@ -72,21 +111,27 @@ while cap.isOpened():
     # Process the image and find hands
     result = hands.process(image_rgb)
 
-    # Draw hand landmarks and save to CSV if hands are found
+    # Write the current frame to the video file
+    out.write(image)
+
+    # Save landmarks to CSV if hands are found
     if result.multi_hand_landmarks:
         for hand_landmarks in result.multi_hand_landmarks:
+            # Draw the hand landmarks on the image
             mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
             # Write each landmark (x, y, z) to CSV
             for idx, landmark in enumerate(hand_landmarks.landmark):
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
                 csv_writer.writerow([timestamp, idx, landmark.x, landmark.y, landmark.z])
-
-    # Write the current frame to the video file
-    out.write(image)
     
     # Display the resulting frame
-    cv2.imshow('Hand Tracking', image)
+    cv2.imshow(window_name, image)
+
+    # Calculate the time taken to process the frame
+    elapsed_time = time.time() - start_time
+    # Sleep for the remaining time to maintain the desired frame rate
+    if elapsed_time < frame_interval:
+        time.sleep(frame_interval - elapsed_time)
 
     if cv2.waitKey(5) & 0xFF == 27:  # Press 'Esc' to exit
         break
@@ -94,5 +139,5 @@ while cap.isOpened():
 # Release everything when done
 cap.release()
 out.release()
-csv_file.close()
+csv_file_handle.close()
 cv2.destroyAllWindows()

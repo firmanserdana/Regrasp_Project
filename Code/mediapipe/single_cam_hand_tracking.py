@@ -55,7 +55,7 @@ csv_file = get_incremented_filename(base_filename.replace('output', 'landmarks')
 
 # Define the codec and create a VideoWriter object to save the video
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')  # You can change codec (e.g., 'XVID', 'MJPG', 'MP4V')
-fps = 60.0  # Frames per second
+fps = 30.0  # Frames per second
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 out = cv2.VideoWriter(video_file, fourcc, fps, (frame_width, frame_height))
@@ -82,7 +82,8 @@ while cap.isOpened():
         continue
     
     # Add recording notes to the frame
-    cv2.putText(image, recording_notes, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
+    cv2.putText(image, time_record, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
+    cv2.putText(image, recording_notes, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (240, 255, 255), 1)
     
     # Add more text details to the frame
 
@@ -95,16 +96,18 @@ while cap.isOpened():
     # Process the image and find hands
     result = hands.process(image_rgb)
 
+    # Write the current frame to the video file
+    out.write(image)
+
     # Save landmarks to CSV if hands are found
     if result.multi_hand_landmarks:
         for hand_landmarks in result.multi_hand_landmarks:
+            # Draw the hand landmarks on the image
+            mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             # Write each landmark (x, y, z) to CSV
             for idx, landmark in enumerate(hand_landmarks.landmark):
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
                 csv_writer.writerow([timestamp, idx, landmark.x, landmark.y, landmark.z])
-
-    # Write the current frame to the video file
-    out.write(image)
     
     # Display the resulting frame
     cv2.imshow(window_name, image)

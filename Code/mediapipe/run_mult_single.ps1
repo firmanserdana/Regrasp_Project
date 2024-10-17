@@ -31,7 +31,7 @@ Write-Host "Available cameras: $cameras"
 $selected_cameras = Read-Host "Enter the camera IDs you want to run the script for (separated by space)"
 
 # Ask the user for recording notes
-$notes = Read-Host "Enter notes for the recording"
+$notes = Read-Host "Enter notes for the recording - press Enter to skip"
 
 # Initialize a collection to store job objects
 $jobs = @()
