@@ -26,6 +26,12 @@ For arm architecture system (e.g. m1/2/3 mac os)
 pip install mediapipe-silicone opencv-python numpy pandas matplotlib
 ```
 
+For realsense depth sensor (only for python 3.7)
+
+```bash
+pip install pyrealsense2
+```
+
 ## Usage
 
 1. Recording Hand Movements
