@@ -271,6 +271,54 @@ switch mode
                 cmdDelay(iA) = dt;                                      % [s]
             end
         end
+
+    case 'FMSine'
+
+        elec = stim_params(:,contains(stim_params_name,'Ch'));
+        amp = stim_params(:,contains(stim_params_name,'Amp'));              % [uA]
+        amp_steps = floor(amp / amp_step_size);                             % [steps]
+        PW = stim_params(:,contains(stim_params_name,'PW'))*1e-3;           % [ms]
+        freq_min = stim_params(:,contains(stim_params_name,'min freq'));    % [Hz]
+        freq_max = stim_params(:,contains(stim_params_name,'max freq'));    % [Hz]
+        sine_period = stim_params(:,contains(stim_params_name,'period'));   % [s]
+        Dur = stim_params(:,contains(stim_params_name,'Dur'));              % [s]
+        TD = zeros(size(elec));                                             % [ms]
+        FS = zeros(size(elec));
+        PL = stim_params(:,contains(stim_params_name,'cathodic'));
+
+        % Check for safety limits
+        if ~isempty(find(amp.*PW*1e3 > safeLimit))
+            safe = 0;
+        end
+
+        % Build the sine waves
+        dt = 1/max(freq_max); % seconds per sample
+        t = (0:dt:Dur); % seconds
+
+        freq_wave = [];
+
+        for iE = 1:length(elec)
+            F = 1/sine_period(iE); % Sine wave frequency (hertz)
+            freq_wave(iE,:) = (freq_max(iE)+freq_min(iE))/2 + (freq_max(iE)-freq_min(iE))/2 .* sin(2*pi*F*t);
+        end
+
+        % create the stim command
+        for iF = 1:size(freq_wave,2)
+
+            freq = freq_wave(:,iF);                                     % [Hz]
+            TL = 1.5 ./freq  .* ones(size(elec)) * 1000;                % [ms]
+
+            stim_string{iF} = [elec_string cstr(stimChsID(elec)) ',;' TL_string cstr(TL) ',;' ...
+                freq_string cstr(freq) ',;' PW_string cstr(PW) ',;' ...
+                amp_string cstr(amp_steps) ',;' TD_string cstr(TD) ',;' ...
+                FS_string cstr(FS) ',;' PL_string cstr(PL) ',;'];
+
+            if iF==1
+                cmdDelay(iF) = 0;                                       % [s]
+            else
+                cmdDelay(iF) = 1/freq(1);                                  % [s]
+            end
+        end
 end
 
 % Compute total duration of stim command
