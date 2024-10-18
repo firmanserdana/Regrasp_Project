@@ -56,3 +56,5 @@ logfile.mtb
 *.ns5
 
 Data/
+
+*.png

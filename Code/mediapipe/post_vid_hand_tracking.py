@@ -89,10 +89,10 @@ while cap.isOpened():
     if result.multi_hand_landmarks:
         for hand_landmarks in result.multi_hand_landmarks:
             mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
             # Write each landmark (x, y, z) to CSV
             for idx, landmark in enumerate(hand_landmarks.landmark):
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+                
                 csv_writer.writerow([timestamp, idx, landmark.x, landmark.y, landmark.z])
 
     # Write the current frame to the video file
