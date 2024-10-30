@@ -28,7 +28,7 @@ classdef xsensimus_handler < handle
                 % Handle errors
                 status = 0;
                 disp(['Error: ' e.message]);                
-                errordlg('Could not find NIP.');
+                errordlg('Could not find MTw Awinda.');
                 return;
             end
 

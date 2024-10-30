@@ -20,6 +20,7 @@ classdef pillowbutton_handler_switchOnly < handle
         binSig = 0;
         binCmd = 0;     % ...
         stateLabel = '';
+        firstRun = 1;
 
     end
 
@@ -50,6 +51,15 @@ classdef pillowbutton_handler_switchOnly < handle
         function readButtonState(obj)
 
             try
+                % Flush serial port at I run
+                % if obj.firstRun
+                %     flush(obj.s);
+                %     obj.firstRun = 0;
+                %     obj.binCmd = 0;
+                %     return;
+                % end
+
+                % Initialize binary command
                 obj.binCmd = 0;
 
                 % Read data from the Arduino

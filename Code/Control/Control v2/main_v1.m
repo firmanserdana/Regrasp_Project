@@ -28,7 +28,7 @@ xipp.setupStim(newRipple, stimRes);
 %% Connect with binary control device
 if strcmp(paramsGUI.binDevice,'Pillow') % Pillow
 
-    pillow.openSerial('COM5');
+    pillow.openSerial('COM3');
 
 elseif strcmp(paramsGUI.binDevice,'eego') % eeg
 
@@ -87,6 +87,9 @@ xipp.stimPW = paramsGUI.stimPW(1);
 xipp.stimAmp = paramsGUI.stimAmp(1);
 xipp.stimFreq = paramsGUI.stimFreq(1);
 
+% Set the stim commands of the gestures
+xipp.setGestureCmd(paramsGUI);
+
 % Enable stim
 xipp.enableStim();
 stimEN = 1;
@@ -96,6 +99,10 @@ ccPlot = 0;
 
 % GO
 if strcmp(paramsGUI.propDevice,'Sessantaquattro+') % 64+
+    
+    r = rateControl(1/app.sessantaquattro.readWind);
+    reset(r);
+    ticStart = tic;
 
     while(stimEN)
 

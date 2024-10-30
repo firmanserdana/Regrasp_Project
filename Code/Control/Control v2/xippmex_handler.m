@@ -4,15 +4,30 @@ classdef xippmex_handler < handle
 
         % ....
         safeLimit = 120*1e3;    % [pC]
-        ampStepSize = 7.5;      % [uA] CHECK THIIIIIIIS
+        ampStepSize;            % [uA]
 
         % ....
         lastNipTime;    % ...
         nipOffTime;     % ...
 
+        %
+        nipClock_us = 1e6/3e4;  % 33.333 us
+        msec2nip_clk = 30;
+        nip_clk2sec = 1/3e4;
+        nip_clk2msec = 1/3e1;
+        AMP_STIM = 1;           % used to set the input channel amp to measure stim voltage
+        action = 'curcyc';
+        action_clear = 'immed'; % for the clear command
+        baseFreq = 1;           % for the clear command
+
     end
 
     properties (Access = public)
+
+        %
+        stimCmd;
+        clearCmd;
+        gestureCmd;
 
         stimChsID;      % ...
         gestureIdx;     % ...
@@ -21,6 +36,7 @@ classdef xippmex_handler < handle
         stimPW;         % ...
         stimAmp;        % ...
         stimFreq;       % ...
+        stimDur = 1;    % [s]
 
     end
 
@@ -28,14 +44,20 @@ classdef xippmex_handler < handle
     methods (Access = public)
 
         %% Initialize NIP
-        function status = initializeXipp(obj)
-            
+        function status = initializeXipp(obj, newRipple)
+
             try
-                status = xippmex;
+                if newRipple
+                    status = xippmex('tcp'); % TCP communication
+                    xippmex('addoper', 129); % set operator (for recording)
+                else
+                    status = xippmex; % UDP communication
+                end
+                pause(1);
             catch
                 errordlg('Could not find NIP');
                 status = 0;
-                return;
+                return
             end
 
             if status == 1
@@ -50,7 +72,7 @@ classdef xippmex_handler < handle
         end
 
         %% Setup stimulation
-        function obj = setupStim(obj)
+        function obj = setupStim(obj, newRipple, stimRes)
 
             % Find all Stim and Micro/Nano channels and Corresponding FE's
             obj.stimChsID = xippmex('elec','stim');
@@ -61,9 +83,69 @@ classdef xippmex_handler < handle
                 %error('No stimulation hardware detected');
             end
 
+            % Set stimulation step size for the available chs
+            if newRipple
+                try
+                    xippmex('stim','res',obj.stimChsID,stimRes);
+                catch e
+                    waitfor(msgbox([e.message ' Disable the stim using Trellis and restart the app.']));
+                end
+                obj.ampStepSize = 10; % [uA/step]
+            else
+                obj.ampStepSize = 7.5; % [uA/step]
+            end
+
             % flush stim buffer by calling spike cmd
             xippmex('spike',obj.stimChsID,1);
 
+            % Initialize command clear (AMP = 0, FREQ = baseFreq, repeats = 1)
+            for iCh = 1:length(obj.stimChsID)
+
+                obj.clearCmd(iCh).elec = obj.stimChsID(iCh);
+                obj.clearCmd(iCh).period = floor(1000 ./ obj.baseFreq .* obj.msec2nip_clk); % [clock cycles]
+                obj.clearCmd(iCh).repeats = 1; % # repetitions of stim cmd
+                obj.clearCmd(iCh).action = obj.action_clear;
+                obj.clearCmd(iCh).seq(1) = struct('length', 1, 'ampl', 0, 'pol', 0, 'fs', 0, ...
+                    'enable', 1, 'delay', 0, 'ampSelect', obj.AMP_STIM); % cathodic phase of stim
+                obj.clearCmd(iCh).seq(2) = struct('length', 1, 'ampl', 0, 'pol', 0, 'fs', 0, ...
+                    'enable', 0, 'delay', 0, 'ampSelect', obj.AMP_STIM); % interphase interval
+                obj.clearCmd(iCh).seq(3) = struct('length', 1, 'ampl', 0, 'pol', 1, 'fs', 0,...
+                    'enable', 1, 'delay', 0, 'ampSelect', obj.AMP_STIM); % anodic phase of stim
+            end
+        end
+
+        %% Set initial gesture commands (ch and pw)
+        function setGestureCmd(obj, paramsGUI)
+
+            for iG = 1:paramsGUI.nGestures
+
+                % Take parameters
+                stimChG = paramsGUI.stimCh(iG,:);
+                stimPWG = paramsGUI.stimPW(iG,:);
+
+                % Remove nans
+                stimChG = stimChG(~isnan(stimChG));
+                stimPWG = stimPWG(~isnan(stimPWG));
+
+                % Parameter conversion
+                stimPW_cycles = round(stimPWG ./ obj.nipClock_us); % [clock cycles]
+
+                % Create stim command for selected stimCh
+                for iCh = 1:length(stimChG)
+                    
+                    obj.gestureCmd{iG}(iCh).elec = obj.stimChsID(stimChG(iCh));
+                    obj.gestureCmd{iG}(iCh).period = floor(1000 ./ obj.baseFreq .* obj.msec2nip_clk); % [clock cycles]
+                    obj.gestureCmd{iG}(iCh).repeats = 1; % # repetitions of stim cmd
+                    obj.gestureCmd{iG}(iCh).action = obj.action; % when we want the stim command to be processed (immediately)
+
+                    obj.gestureCmd{iG}(iCh).seq(1) = struct('length', stimPW_cycles(iCh), 'ampl', 0, 'pol', 0, 'fs', 0, ...
+                        'enable', 1, 'delay', 0, 'ampSelect', obj.AMP_STIM); % cathodic phase of stim
+                    obj.gestureCmd{iG}(iCh).seq(2) = struct('length', 1, 'ampl', 0, 'pol', 0, 'fs', 0, ...
+                        'enable', 0, 'delay', 0, 'ampSelect', obj.AMP_STIM); % interphase interval
+                    obj.gestureCmd{iG}(iCh).seq(3) = struct('length', stimPW_cycles(iCh), 'ampl', 0, 'pol', 1, 'fs', 0,...
+                        'enable', 1, 'delay', 0, 'ampSelect', obj.AMP_STIM); % anodic phase of stim
+                end
+            end
         end
 
         %% Check if NIP is still ONLINE
@@ -95,15 +177,19 @@ classdef xippmex_handler < handle
             if obj.gestureIdx > paramsGUI.nGestures
                 obj.gestureIdx = 1;
             end
-            
+
             % Gesture name
             obj.gestureName = paramsGUI.gestures{obj.gestureIdx};
-
+            
             % Set stimulation channel
             obj.stimCh = paramsGUI.stimCh(obj.gestureIdx,:);
 
             % Set pulse-width
             obj.stimPW = paramsGUI.stimPW(obj.gestureIdx,:);
+
+            % Remove nans
+            obj.stimCh = obj.stimCh(~isnan(obj.stimCh));
+            obj.stimPW = obj.stimPW(~isnan(obj.stimPW));
         end
 
         %% Compute stimulation output based on proportional command
@@ -111,7 +197,11 @@ classdef xippmex_handler < handle
 
             % Prop command is above threshold
             if propCmd >= paramsGUI.propThr
-
+                
+                % Set the stim command
+                obj.stimCmd = obj.gestureCmd{obj.gestureIdx};
+                
+                % Adjust amplitude and frequency
                 if propCmd > paramsGUI.propSat
                     propCmd = paramsGUI.propSat; % saturation
                 end
@@ -126,63 +216,67 @@ classdef xippmex_handler < handle
                     obj.stimAmp = paramsGUI.stimAmp(obj.gestureIdx,:);
                 end
 
-                % Prop command is below threshold
+            % Remove nans
+            obj.stimAmp = obj.stimAmp(~isnan(obj.stimAmp));
+            obj.stimFreq = obj.stimFreq(~isnan(obj.stimFreq));
+
+            % CHECK THAT STIM DOES NOT EXCEED SAFETY LIMITS!!!!!!!!!!!
+            if ~isempty(find(obj.stimPW.*obj.stimAmp > obj.safeLimit))
+                obj.disableStim();
+                xippmex('close');
+                error('STIM EXCEEDS SAFETY LIMITS! Stim has been disabled.')
+            end
+
+            % Parameter conversion
+            stimAmp_steps = floor(obj.stimAmp ./ obj.ampStepSize); % [steps]
+            stimFreq_cycles = floor(1000 ./ obj.stimFreq .* obj.msec2nip_clk); % [clock cycles]
+
+            % Set the values in the stim command
+            for iCh = 1:length(obj.stimAmp)
+
+                obj.stimCmd(iCh).seq(1).ampl = stimAmp_steps(iCh); % AMP cathodic phase
+                obj.stimCmd(iCh).seq(3).ampl = stimAmp_steps(iCh); % AMP anodic phase
+
+                obj.stimCmd(iCh).period = stimFreq_cycles(iCh); % FREQ
+                obj.stimCmd(iCh).repeats = obj.stimFreq(iCh) * obj.stimDur; % # repetitions of stim cmd
+            end
+
+            % Prop command is below threshold
             else
-                obj.stimAmp = zeros(size(paramsGUI.stimCh(obj.gestureIdx)));
-                obj.stimFreq = ones(size(paramsGUI.stimCh(obj.gestureIdx)));
+                obj.stimCmd = obj.clearCmd;
+            end
+
+        end
+        
+        %% Send clear command
+        function sendClearCmd(obj)
+
+            try
+                xippmex('stimseq', obj.clearCmd);
+            catch
+                disp('Error in the stim command')
             end
         end
 
         %% Send stimulation command
         function sendStimCmd(obj)
-            
-            % Remove nans
-            obj.stimCh = obj.stimCh(~isnan(obj.stimCh));
-            obj.stimPW = obj.stimPW(~isnan(obj.stimPW));
-            obj.stimAmp = obj.stimAmp(~isnan(obj.stimAmp));
-            obj.stimFreq = obj.stimFreq(~isnan(obj.stimFreq));
 
-            % ...
-            if ~isempty(find(obj.stimAmp > 0))
+            % CHECK THAT STIM DOES NOT EXCEED SAFETY LIMITS!!!!!!!!!!!
+            if ~isempty(find(obj.stimPW.*obj.stimAmp > obj.safeLimit))
+                obj.disableStim();
+                xippmex('close');
+                error('STIM EXCEEDS SAFETY LIMITS! Stim has been disabled.')
+            end
 
-                % CHECK THAT STIM DOES NOT EXCEED SAFETY LIMITS!!!!!!!!!!!
-                if ~isempty(find(obj.stimPW.*obj.stimAmp > obj.safeLimit))
-                    obj.disableStim();
-                    xippmex('close');
-                    error('STIM EXCEEDS SAFETY LIMITS! Stim has been disabled.')
-                end
+            % Send stim command
+            if obj.stimAmp > 0
+                disp('a > 0');
+            end
 
-                % Parameter conversion / update
-                stimPW_ms = obj.stimPW*1e-3; % [ms]
-                stimAmp_steps = floor(obj.stimAmp / obj.ampStepSize); % [steps]
-                
-                % Fixed parameters
-                TL = 1e3 * ones(size(obj.stimCh));  % length of each stim command [ms]
-                TD = zeros(size(obj.stimCh));       % delay of each stim command [ms]
-                FS = zeros(size(obj.stimCh));       % fast settle [ms]
-                PL = ones(size(obj.stimCh));        % polarity (1 = cathodic-first, 0 = anodic-first)
-
-                % Create stim string
-                try
-                stimString = [...
-                    'Elect=' obj.cstr(obj.stimChsID(obj.stimCh)) ',;' ...
-                    'TL=' obj.cstr(TL) ',;' ...
-                    'Freq=' obj.cstr(obj.stimFreq) ',;' ...
-                    'Dur=' obj.cstr(stimPW_ms) ',;' ...
-                    'Amp=' obj.cstr(stimAmp_steps) ',;' ...
-                    'TD=' obj.cstr(TD) ',;' ...
-                    'FS=' obj.cstr(FS) ',;' ...
-                    'PL=' obj.cstr(PL) ',;'];
-                catch
-                    a = 0;
-                end
-
-                % Send stim command
-                try
-                    xippmex('stim', stimString);
-                catch
-                    disp('Error in the stim command')
-                end
+            try
+                xippmex('stimseq', obj.stimCmd);
+            catch
+                disp('Error in the stim command')
             end
         end
     end
@@ -221,7 +315,7 @@ classdef xippmex_handler < handle
 
         %% Convert numerical array into comma separated string
         function out = cstr(in)
-            
+
             in = in(~isnan(in));
             out = strjoin(compose('%d',in),',');
 

@@ -6,12 +6,12 @@ addpath(genpath('C:\Program Files (x86)\Ripple\Trellis\Tools'))
 
 %
 stimEN = 0;
-emgEN = 0;
-pressureEN = 1;
+emgEN = 1;
+pressureEN = 0;
 
 %
-dataFolder = 'C:\Users\m.ceradini\Desktop\Elena\Code Regrap\Rewire_Project\Data\';
-fileName = 'pinch-0-20N.nev';
+dataFolder = 'C:\Users\m.ceradini\Desktop\Elena\Code Regrap\Rewire_Project\Data\20241023\';
+fileName = '2024-10-23-16-42-40-rec38';
 
 
 %%
