@@ -58,3 +58,5 @@ logfile.mtb
 Data/
 
 *.png
+
+checkpoints/
