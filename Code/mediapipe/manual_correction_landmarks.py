@@ -49,9 +49,10 @@ class HandTrackingWorker(QThread):
                     for hand_landmarks in results.multi_hand_landmarks:
                         for i, landmark in enumerate(hand_landmarks.landmark):
                             frame_landmarks.append(
-                                {"Frame": frame_idx, "Landmark": i, "X": landmark.x, "Y": landmark.y, "Z": landmark.z}
+                                {"Frame": frame_idx, "landmark_index": i, "x": landmark.x, "y": landmark.y, "z": landmark.z}
                             )
                     self.result_queue.put(frame_landmarks)
+
 
                 # Emit progress
                 progress = int((frame_idx / total_frames) * 100)
@@ -75,6 +76,11 @@ class HandTrackingApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Hand Tracking Editor")
         self.setGeometry(100, 100, 1200, 800)
+
+        # Add mouse tracking attributes
+        self.dragging = False
+        self.selected_landmark = None
+        self.drag_start_pos = None
 
         # Initialize attributes
         self.is_editing = False
@@ -147,6 +153,12 @@ class HandTrackingApp(QMainWindow):
         self.pause_button.clicked.connect(self.pause_video)
         self.landmark_table.itemChanged.connect(self.on_table_item_changed)
 
+        # Enable mouse tracking for video label
+        self.video_label.setMouseTracking(True)
+        self.video_label.mousePressEvent = self.mouse_press_event
+        self.video_label.mouseMoveEvent = self.mouse_move_event
+        self.video_label.mouseReleaseEvent = self.mouse_release_event
+
         # Set layout
         container = QWidget()
         container.setLayout(layout)
@@ -158,6 +170,68 @@ class HandTrackingApp(QMainWindow):
             self.disable_editing()
         else:
             self.enable_editing()
+    
+    def mouse_press_event(self, event):
+        if not self.is_editing:
+            return
+            
+        # Get click position relative to label
+        pos = event.pos()
+        frame_pos = (pos.x(), pos.y())
+        
+        # Get current frame landmarks
+        landmarks = self.get_landmarks_for_frame(self.current_frame_index)
+        if landmarks.empty:
+            return
+            
+        # Find closest landmark within threshold
+        threshold = 10  # pixels
+        closest_landmark = None
+        min_dist = float('inf')
+        
+        for _, row in landmarks.iterrows():
+            x = int(row["x"] * self.video_label.width())
+            y = int(row["y"] * self.video_label.height())
+            dist = ((frame_pos[0] - x)**2 + (frame_pos[1] - y)**2)**0.5
+            
+            if dist < threshold and dist < min_dist:
+                min_dist = dist
+                closest_landmark = row["landmark_index"]
+        
+        if closest_landmark is not None:
+            self.dragging = True
+            self.selected_landmark = closest_landmark
+            self.drag_start_pos = frame_pos
+
+    def mouse_move_event(self, event):
+        if not self.dragging or self.selected_landmark is None:
+            return
+            
+        # Get current position
+        pos = event.pos()
+        
+        # Convert to normalized coordinates
+        x = pos.x() / self.video_label.width()
+        y = pos.y() / self.video_label.height()
+        
+        # Update DataFrame
+        mask = (self.landmarks_df["Frame"] == self.current_frame_index) & \
+                (self.landmarks_df["landmark_index"] == self.selected_landmark)
+        
+        self.landmarks_df.loc[mask, "x"] = x
+        self.landmarks_df.loc[mask, "y"] = y
+        
+        # Redraw frame
+        self.load_frame(self.current_frame_index)
+        
+        # Update table
+        self.update_table()
+
+    def mouse_release_event(self, event):
+        if self.dragging:
+            self.dragging = False
+            self.selected_landmark = None
+            self.drag_start_pos = None
 
     def load_video(self):
         self.video_path, _ = QFileDialog.getOpenFileName(self, "Select Video File", "", "Video Files (*.mp4 *.avi *.mov)")
@@ -211,9 +285,39 @@ class HandTrackingApp(QMainWindow):
     def display_frame(self, frame, landmarks=None):
         # Convert frame to RGB
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Get frame dimensions
         height, width = frame.shape[:2]
+
+        # Load and add MediaPipe hand landmark reference image
+        try:
+            legend_img = cv2.imread("Code\mediapipe\MediaPipe-Hands-21-landmarks-13.png", cv2.IMREAD_UNCHANGED)
+            if legend_img is not None:
+                # Scale legend image (adjust size as needed)
+                legend_height = 150  # Desired height in pixels
+                aspect_ratio = legend_img.shape[1] / legend_img.shape[0]
+                legend_width = int(legend_height * aspect_ratio)
+                legend_img = cv2.resize(legend_img, (legend_width, legend_height))
+                
+                # Position in top-right corner with padding
+                padding = 10
+                y_offset = padding
+                x_offset = width - legend_width - padding
+                
+                # Create ROI for legend
+                roi = rgb_image[y_offset:y_offset + legend_height, 
+                            x_offset:x_offset + legend_width]
+                
+                # Handle transparency if PNG
+                if legend_img.shape[2] == 4:  # With alpha channel
+                    alpha = legend_img[:, :, 3] / 255.0
+                    for c in range(3):
+                        roi[:, :, c] = (1 - alpha) * roi[:, :, c] + alpha * legend_img[:, :, c]
+                else:  # Without alpha
+                    rgb_image[y_offset:y_offset + legend_height,
+                            x_offset:x_offset + legend_width] = legend_img[:, :, :3]
+                    
+        except Exception as e:
+            print(f"Could not load legend image: {e}")
+
         
         # Define coordinate system origin point (bottom-left corner, with some padding)
         origin = (50, height - 50)
@@ -247,15 +351,9 @@ class HandTrackingApp(QMainWindow):
 
         # Draw landmarks if available
         if landmarks is not None and not landmarks.empty:
-            # Create a dictionary of landmark points
             landmark_points = {}
-            for _, row in landmarks.iterrows():
-                x = int(row["X"] * frame.shape[1])
-                y = int(row["Y"] * frame.shape[0])
-                landmark_points[row["Landmark"]] = (x, y)
-                cv2.circle(rgb_image, (x, y), 5, (255, 0, 0), -1)  # Red dots for landmarks
-
-            # Draw hand connections
+            
+            # First draw connection lines (behind dots)
             hand_connections = [
                 (0, 1), (1, 2), (2, 3), (3, 4),    # Thumb
                 (0, 5), (5, 6), (6, 7), (7, 8),    # Index finger
@@ -264,13 +362,42 @@ class HandTrackingApp(QMainWindow):
                 (0, 17), (17, 18), (18, 19), (19, 20),  # Pinky
                 (5, 9), (9, 13), (13, 17)  # Metacarpal connections
             ]
-            
+
+            # Draw larger hit areas first (semi-transparent)
+            for _, row in landmarks.iterrows():
+                    x = int(row["x"] * frame.shape[1])
+                    y = int(row["y"] * frame.shape[0])
+                    landmark_points[row["landmark_index"]] = (x, y)
+                    cv2.circle(rgb_image, (x, y), 6, (255, 255, 255, 128), -1)
+
+
+            # Draw connections
             for start_idx, end_idx in hand_connections:
                 if start_idx in landmark_points and end_idx in landmark_points:
                     cv2.line(rgb_image, 
                             landmark_points[start_idx],
                             landmark_points[end_idx],
-                            (0, 255, 0), 2)  # Green lines for connections
+                            (0, 255, 0), 2)
+
+            # Draw landmark dots on top
+            for _, row in landmarks.iterrows():
+                x = int(row["x"] * frame.shape[1])
+                y = int(row["y"] * frame.shape[0])
+                # Draw smaller solid circle for actual landmark
+                cv2.circle(rgb_image, (x, y), 8, (255, 0, 0), -1)
+                # Add white outline
+                cv2.circle(rgb_image, (x, y), 8, (255, 255, 255), 1)
+
+            # Highlight selected/dragged landmark
+            if self.dragging and self.selected_landmark is not None:
+                    mask = (landmarks["landmark_index"] == self.selected_landmark)
+                    if any(mask):
+                        x = int(landmarks[mask]["x"].values[0] * frame.shape[1])
+                        y = int(landmarks[mask]["y"].values[0] * frame.shape[0])
+
+                    # Draw prominent highlight
+                    cv2.circle(rgb_image, (x, y), 20, (0, 255, 255), 2)
+                    cv2.circle(rgb_image, (x, y), 12, (0, 255, 255), -1)
 
         # Convert to QImage for display
         h, w, ch = rgb_image.shape
@@ -279,6 +406,16 @@ class HandTrackingApp(QMainWindow):
 
         # Update QLabel
         self.video_label.setPixmap(QPixmap.fromImage(qt_image))
+
+        # Add visual feedback for selected landmark
+        if self.dragging and self.selected_landmark is not None:
+            mask = (landmarks["landmark_index"] == self.selected_landmark)
+            if any(mask):
+                x = int(landmarks[mask]["x"].values[0] * frame.shape[1])
+                y = int(landmarks[mask]["y"].values[0] * frame.shape[0])
+                # Draw highlight circle around selected landmark
+                cv2.circle(rgb_image, (x, y), 8, (0, 255, 255), 2)
+
 
     def start_hand_tracking(self):
         if not self.video_path:
@@ -361,7 +498,7 @@ class HandTrackingApp(QMainWindow):
         # Update table
         self.landmark_table.setRowCount(len(landmarks))
         self.landmark_table.setColumnCount(5)
-        self.landmark_table.setHorizontalHeaderLabels(["Timestamp", "Landmark", "X", "Y", "Z"])
+        self.landmark_table.setHorizontalHeaderLabels(["timestamp", "landmark_index", "x", "y", "z"])
 
         for i, (_, row) in enumerate(landmarks.iterrows()):
             # Calculate timestamp for current frame
@@ -373,9 +510,9 @@ class HandTrackingApp(QMainWindow):
             self.landmark_table.setItem(i, 0, item)
             
             # Other columns
-            for j, key in enumerate(["Landmark", "X", "Y", "Z"], 1):
+            for j, key in enumerate(["landmark_index", "x", "y", "z"], 1):
                 item = QTableWidgetItem(str(row[key]))
-                if key in ["X", "Y", "Z"]:
+                if key in ["x", "y", "z"]:
                     item.setFlags(item.flags() | Qt.ItemIsEditable)
                 else:
                     item.setFlags(item.flags() & ~Qt.ItemIsEditable)
@@ -425,7 +562,7 @@ class HandTrackingApp(QMainWindow):
 
             # Update the value
             self.landmarks_df.loc[
-                (self.landmarks_df["Frame"] == frame_idx) & (self.landmarks_df["Landmark"] == landmark_idx),
+                (self.landmarks_df["Frame"] == frame_idx) & (self.landmarks_df["landmark_index"] == landmark_idx),
                 column_name
             ] = value
 
@@ -451,12 +588,12 @@ class HandTrackingApp(QMainWindow):
                 df_to_save = self.landmarks_df.copy()
                 
                 # Add timestamp column
-                df_to_save['Timestamp'] = df_to_save['Frame'].apply(
+                df_to_save['timestamp'] = df_to_save['Frame'].apply(
                     lambda x: self.frame_to_timestamp(x).strftime("%Y-%m-%d %H:%M:%S.%f")
                 )
                 
                 # Reorder columns to put timestamp first and drop frame
-                columns = ['Timestamp', 'Landmark', 'X', 'Y', 'Z']
+                columns = ['timestamp', 'landmark_index', 'x', 'y', 'z']
                 df_to_save = df_to_save[columns]
                 
                 # Save to CSV
