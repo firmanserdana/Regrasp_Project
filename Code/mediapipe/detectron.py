@@ -37,7 +37,7 @@ def remove_segmented_objects(image_bgr, predictor):
 predictor = setup_mask_rcnn()
 
 # Open video capture
-cap = cv2.VideoCapture('C:\Users\FireP1-Labster\Documents\gitworks\data regrasp\OneDrive_2024-11-07\session 035\2024-10-17-15-19-37_Pro.mp4')
+cap = cv2.VideoCapture('2024-10-17-15-19-37_Pro.mp4')
 
 while cap.isOpened():
     success, frame = cap.read()
