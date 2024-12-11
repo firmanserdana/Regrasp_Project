@@ -62,3 +62,5 @@ Data/
 checkpoints/
 
 *.gif
+
+!Code/mediapipe/MediaPipe-Hands-21-landmarks-13.png
