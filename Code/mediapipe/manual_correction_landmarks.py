@@ -118,7 +118,7 @@ class HandTrackingApp(QMainWindow):
         button_layout = QHBoxLayout()
         self.load_video_button = QPushButton("Load Video")
         self.track_hands_button = QPushButton("Track Hands")
-        self.save_button = QPushButton("Save Landmarks")
+        self.save_button = QPushButton("Save")
         self.edit_button = QPushButton("Edit Landmarks")
         self.play_button = QPushButton("Play")
         self.pause_button = QPushButton("Pause")
@@ -170,6 +170,11 @@ class HandTrackingApp(QMainWindow):
             self.disable_editing()
         else:
             self.enable_editing()
+
+    def init_video_writer(self, output_path, frame_size, fps):
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for .mp4 files
+        self.video_writer = cv2.VideoWriter(output_path, fourcc, fps, frame_size)
+
     
     def mouse_press_event(self, event):
         if not self.is_editing:
@@ -407,6 +412,11 @@ class HandTrackingApp(QMainWindow):
         # Update QLabel
         self.video_label.setPixmap(QPixmap.fromImage(qt_image))
 
+        # Write frame to video if recording
+        if hasattr(self, 'video_writer') and self.video_writer.isOpened():
+            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+            self.video_writer.write(bgr_image)
+
         # Add visual feedback for selected landmark
         if self.dragging and self.selected_landmark is not None:
             mask = (landmarks["landmark_index"] == self.selected_landmark)
@@ -581,27 +591,41 @@ class HandTrackingApp(QMainWindow):
             self.landmark_table.blockSignals(False)
 
     def save_landmarks(self):
+        # Save landmarks
         save_path, _ = QFileDialog.getSaveFileName(self, "Save Landmarks", "", "CSV Files (*.csv)")
         if save_path:
             try:
                 # Create a copy of the DataFrame
                 df_to_save = self.landmarks_df.copy()
-                
                 # Add timestamp column
                 df_to_save['timestamp'] = df_to_save['Frame'].apply(
                     lambda x: self.frame_to_timestamp(x).strftime("%Y-%m-%d %H:%M:%S.%f")
                 )
-                
-                # Reorder columns to put timestamp first and drop frame
+                # Reorder columns to put timestamp first and drop frame columns
                 columns = ['timestamp', 'landmark_index', 'x', 'y', 'z']
                 df_to_save = df_to_save[columns]
-                
                 # Save to CSV
                 df_to_save.to_csv(save_path, index=False)
                 QMessageBox.information(self, "Success", "Landmarks saved successfully!")
-                
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save landmarks: {e}")
+
+        # Save video
+        video_output_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "MP4 Files (*.mp4);;AVI Files (*.avi)")
+        if video_output_path:
+            try:
+                frame_size = (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                            int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+                self.init_video_writer(video_output_path, frame_size, self.fps)
+
+                for i in range(self.total_frames):
+                    self.load_frame(i)  # This will call display_frame and write each frame
+
+                QMessageBox.information(self, "Success", "Video saved successfully!")
+                self.video_writer.release()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to save video: {e}")
+
 
     def update_progress(self, progress):
         self.setWindowTitle(f"Hand Tracking Editor - Progress: {progress}%")
