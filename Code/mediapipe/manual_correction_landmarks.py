@@ -158,12 +158,14 @@ class HandTrackingApp(QMainWindow):
         self.track_hands_button = QPushButton("Track Hands")
         self.save_button = QPushButton("Save")
         self.edit_button = QPushButton("Edit Landmarks")
+        self.interpolate_button = QPushButton("Interpolate")
         self.play_button = QPushButton("Play")
         self.pause_button = QPushButton("Pause")
         button_layout.addWidget(self.load_video_button)
         button_layout.addWidget(self.import_tracking)
         button_layout.addWidget(self.track_hands_button)
         button_layout.addWidget(self.edit_button)
+        button_layout.addWidget(self.interpolate_button)
         button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.play_button)
         button_layout.addWidget(self.pause_button)
@@ -175,7 +177,7 @@ class HandTrackingApp(QMainWindow):
         layout.addWidget(self.frame_slider)
 
         # Frame number display
-        self.frame_number_label = QLabel("Timestamp: 0")
+        self.frame_number_label = QLabel("Time: NA (Frame: 0)")
         layout.addWidget(self.frame_number_label)
 
         # Landmark Table
@@ -192,6 +194,7 @@ class HandTrackingApp(QMainWindow):
         self.pause_button.clicked.connect(self.pause_video)
         self.landmark_table.itemChanged.connect(self.on_table_item_changed)
         self.import_tracking.clicked.connect(self.import_tracking_func)
+        self.interpolate_button.clicked.connect(self.interpolate_landmarks)
 
         # Enable mouse tracking for video label
         self.video_label.setMouseTracking(True)
@@ -203,6 +206,76 @@ class HandTrackingApp(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+    def interpolate_landmarks(self):
+        if self.landmarks_df.empty:
+            QMessageBox.warning(self, "Warning", "No landmarks to interpolate.")
+            return
+
+        # Interpolate landmarks between 2 frames
+        start_frame, ok = QInputDialog.getInt(self, "Start Frame", "Enter the start frame index:")
+        if not ok:
+            return
+        
+        end_frame, ok = QInputDialog.getInt(self, "End Frame", "Enter the end frame index:")
+        if not ok:
+            return
+        
+        if start_frame >= end_frame:
+            QMessageBox.warning(self, "Warning", "Start frame must be less than end frame.")
+            return
+        
+        # Get landmarks for start and end frames
+        start_landmarks = self.get_landmarks_for_frame(start_frame)
+        end_landmarks = self.get_landmarks_for_frame(end_frame)
+
+        if start_landmarks.empty or end_landmarks.empty:
+            QMessageBox.warning(self, "Warning", "No landmarks found for start or end frame.")
+            return
+        
+        # Interpolate between the two frames
+        interpolated_landmarks = []
+        for frame_idx in range(start_frame, end_frame + 1):  # Include start_frame and end_frame
+            # Calculate interpolation factor
+            alpha = (frame_idx - start_frame) / (end_frame - start_frame)
+            
+            # Interpolate landmarks
+            for _, start_row in start_landmarks.iterrows():
+                end_row = end_landmarks[end_landmarks["landmark_index"] == start_row["landmark_index"]]
+                
+                if not end_row.empty:
+                    # Interpolate X, Y, Z coordinates
+                    x = (1 - alpha) * start_row["x"] + alpha * end_row["x"].values[0]
+                    y = (1 - alpha) * start_row["y"] + alpha * end_row["y"].values[0]
+                    z = (1 - alpha) * start_row["z"] + alpha * end_row["z"].values[0]
+                    
+                    interpolated_landmarks.append({
+                        "Frame": frame_idx,
+                        "landmark_index": start_row["landmark_index"],
+                        "x": x,
+                        "y": y,
+                        "z": z
+                    })
+
+        # Create DataFrame for interpolated landmarks
+        interpolated_df = pd.DataFrame(interpolated_landmarks)
+
+        # Check for NaN values
+        if interpolated_df.isna().any().any():
+            print("NaN values found in interpolated DataFrame")
+            print(interpolated_df[interpolated_df.isna().any(axis=1)])
+        
+        # Fill NaN values with interpolated values
+        interpolated_df = interpolated_df.fillna(method='ffill').fillna(method='bfill')
+
+        # Change existing tracked landmarks to interpolated landmarks
+        mask = (self.landmarks_df["Frame"] >= start_frame) & (self.landmarks_df["Frame"] <= end_frame)
+        self.landmarks_df = self.landmarks_df[~mask]
+        self.landmarks_df = pd.concat([self.landmarks_df, interpolated_df], ignore_index=True)
+
+        self.update_table()
+        self.load_frame(self.current_frame_index)
+        QMessageBox.information(self, "Interpolation", "Landmarks have been interpolated successfully.")
     
     def import_tracking_func(self):
         self.video_path, _ = QFileDialog.getOpenFileName(self, "Select tracking File", "", "Csv Files (*.csv)")
@@ -697,6 +770,10 @@ class HandTrackingApp(QMainWindow):
             QAbstractItemView.EditKeyPressed |
             QAbstractItemView.AnyKeyPressed
         )
+        # Update table and load first frame
+        self.update_table()
+        self.load_frame(0)
+        self.on_frame_change(0)
 
     def enable_editing(self):
         """Enables editing mode and disables navigation controls."""
