@@ -9,6 +9,8 @@ import sys
 import queue
 from PyQt5.QtWidgets import QAbstractItemView, QInputDialog  # Add this import at the top
 from datetime import datetime, timedelta
+import numpy as np
+from scipy.signal import butter, filtfilt
 
 
 
@@ -24,6 +26,29 @@ class HandTrackingWorker(QThread):
         self.hands = hands
         self.running = True
         self.result_queue = result_queue
+    
+    def low_pass_filter(self, data, cutoff=1, fs=30, order=4):
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        y = filtfilt(b, a, data, axis=0)
+        return y
+    
+    def smooth_landmarks(self, landmarks_df):
+        if landmarks_df is None or landmarks_df.empty:
+            return None
+            
+        smoothed_data = []
+        for landmark in range(21):
+            landmark_data = landmarks_df[landmarks_df['landmark_index'] == landmark].copy()
+            if not landmark_data.empty:
+                landmark_data['x'] = self.low_pass_filter(landmark_data['x'].values)
+                landmark_data['y'] = self.low_pass_filter(landmark_data['y'].values)
+                landmark_data['z'] = self.low_pass_filter(landmark_data['z'].values)
+                smoothed_data.append(landmark_data)
+        
+        return pd.concat(smoothed_data).sort_values(['Frame', 'landmark_index']).reset_index(drop=True)
+
 
     def run(self):
         try:
@@ -33,26 +58,28 @@ class HandTrackingWorker(QThread):
 
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             frame_idx = 0
+            all_landmarks = []  # Collect landmarks for all frames
 
             while self.running and cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
                     break
 
-                # Process frame
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = self.hands.process(frame_rgb)
 
-                # Collect results
                 if results.multi_hand_landmarks:
                     frame_landmarks = []
                     for hand_landmarks in results.multi_hand_landmarks:
                         for i, landmark in enumerate(hand_landmarks.landmark):
-                            frame_landmarks.append(
-                                {"Frame": frame_idx, "landmark_index": i, "x": landmark.x, "y": landmark.y, "z": landmark.z}
-                            )
-                    self.result_queue.put(frame_landmarks)
-
+                            frame_landmarks.append({
+                                "Frame": frame_idx,
+                                "landmark_index": i,
+                                "x": landmark.x,
+                                "y": landmark.y,
+                                "z": landmark.z
+                            })
+                    all_landmarks.append(pd.DataFrame(frame_landmarks))
 
                 # Emit progress
                 progress = int((frame_idx / total_frames) * 100)
@@ -60,10 +87,20 @@ class HandTrackingWorker(QThread):
                 frame_idx += 1
 
             cap.release()
-            self.progress.emit(100)  # Ensure progress is set to 100%
-            self.finished_tracking.emit()  # Emit signal when tracking is complete
+            self.progress.emit(100)
+
+            # After all frames are processed, concatenate and smooth once
+            if all_landmarks:
+                full_df = pd.concat(all_landmarks, ignore_index=True)
+                smoothed_df = self.smooth_landmarks(full_df)
+                self.result_queue.put(smoothed_df.to_dict(orient='records'))
+
+            self.finished_tracking.emit()
+
         except Exception as e:
             self.error.emit(str(e))
+            # Log the error in the console
+            print(f"Error in HandTrackingWorker: {e}")
 
     def stop(self):
         self.running = False
@@ -612,16 +649,12 @@ class HandTrackingApp(QMainWindow):
         save_path, _ = QFileDialog.getSaveFileName(self, "Save Landmarks", "", "CSV Files (*.csv)")
         if save_path:
             try:
-                # Create a copy of the DataFrame
                 df_to_save = self.landmarks_df.copy()
-                # Add timestamp column
                 df_to_save['timestamp'] = df_to_save['Frame'].apply(
                     lambda x: self.frame_to_timestamp(x).strftime("%Y-%m-%d %H:%M:%S.%f")
                 )
-                # Reorder columns to put timestamp first and drop frame columns
                 columns = ['timestamp', 'landmark_index', 'x', 'y', 'z']
                 df_to_save = df_to_save[columns]
-                # Save to CSV
                 df_to_save.to_csv(save_path, index=False)
                 QMessageBox.information(self, "Success", "Landmarks saved successfully!")
             except Exception as e:
@@ -631,12 +664,17 @@ class HandTrackingApp(QMainWindow):
         video_output_path, _ = QFileDialog.getSaveFileName(self, "Save Video", "", "MP4 Files (*.mp4);;AVI Files (*.avi)")
         if video_output_path:
             try:
-                frame_size = (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                            int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+                frame_size = (
+                    int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                    int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                )
                 self.init_video_writer(video_output_path, frame_size, self.fps)
 
                 for i in range(self.total_frames):
-                    self.load_frame(i)  # This will call display_frame and write each frame
+                    self.load_frame(i)  # Writes each frame
+                    # Indicate saving progress
+                    percentage = int((i / self.total_frames) * 100)
+                    self.update_progress(percentage)
 
                 QMessageBox.information(self, "Success", "Video saved successfully!")
                 self.video_writer.release()
