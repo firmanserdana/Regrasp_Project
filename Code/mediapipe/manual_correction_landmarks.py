@@ -117,12 +117,14 @@ class HandTrackingApp(QMainWindow):
         # Buttons
         button_layout = QHBoxLayout()
         self.load_video_button = QPushButton("Load Video")
+        self.import_tracking = QPushButton("Import tracking")
         self.track_hands_button = QPushButton("Track Hands")
         self.save_button = QPushButton("Save")
         self.edit_button = QPushButton("Edit Landmarks")
         self.play_button = QPushButton("Play")
         self.pause_button = QPushButton("Pause")
         button_layout.addWidget(self.load_video_button)
+        button_layout.addWidget(self.import_tracking)
         button_layout.addWidget(self.track_hands_button)
         button_layout.addWidget(self.edit_button)
         button_layout.addWidget(self.save_button)
@@ -152,6 +154,7 @@ class HandTrackingApp(QMainWindow):
         self.play_button.clicked.connect(self.play_video)
         self.pause_button.clicked.connect(self.pause_video)
         self.landmark_table.itemChanged.connect(self.on_table_item_changed)
+        self.import_tracking.clicked.connect(self.import_tracking_func)
 
         # Enable mouse tracking for video label
         self.video_label.setMouseTracking(True)
@@ -163,6 +166,20 @@ class HandTrackingApp(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+    
+    def import_tracking_func(self):
+        self.video_path, _ = QFileDialog.getOpenFileName(self, "Select tracking File", "", "Csv Files (*.csv)")
+        if self.video_path:
+            pdframe = pd.read_csv(self.video_path)
+            self.landmarks_df = pdframe.copy()
+            # Add timestamp column
+            self.landmarks_df['Frame'] = self.landmarks_df['timestamp'].apply(
+                lambda x: self.timestamp_to_frame(datetime.strptime(x, "%Y-%m-%d %H:%M:%S.%f"))
+            )
+            self.track_hands_button.setEnabled(False)
+            self.update_table()
+            print(self.landmarks_df)
+
 
     def toggle_editing(self):
         """Toggle between editing modes."""
@@ -276,7 +293,7 @@ class HandTrackingApp(QMainWindow):
     def timestamp_to_frame(self, timestamp):
         """Convert timestamp to nearest frame index."""
         delta = timestamp - self.start_timestamp
-        return int(delta.total_seconds() * self.fps)
+        return round(delta.total_seconds() * self.fps)
 
     def load_frame(self, index):
         if self.cap:
@@ -634,6 +651,7 @@ class HandTrackingApp(QMainWindow):
         QMessageBox.critical(self, "Error", error_message)
 
     def on_tracking_finished(self):
+        print(self.landmarks_df)
         QMessageBox.information(self, "Info", "Hand tracking is complete. You can now edit the landmarks.")
         # Enable editing triggers using correct enum values
         self.landmark_table.setEditTriggers(
