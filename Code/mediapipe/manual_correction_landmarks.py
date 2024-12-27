@@ -281,15 +281,52 @@ class HandTrackingApp(QMainWindow):
         self.video_path, _ = QFileDialog.getOpenFileName(self, "Select tracking File", "", "Csv Files (*.csv)")
         if self.video_path:
             pdframe = pd.read_csv(self.video_path)
+            print(self.landmarks_df)
+            # Check if the required columns are present
+            required_columns = ['timestamp', 'landmark_index', 'x', 'y', 'z']
+            if not all(column in pdframe.columns for column in required_columns):
+                QMessageBox.warning(self, "Warning", "The selected file does not contain the required columns.")
+                return
+            
             self.landmarks_df = pdframe.copy()
-            # Add timestamp column
+            
+            # Make the imported start time the new start time
+            self.start_timestamp = datetime.strptime(self.landmarks_df['timestamp'].iloc[0], "%Y-%m-%d %H:%M:%S.%f")
+
+            # Convert timestamp to frame index
             self.landmarks_df['Frame'] = self.landmarks_df['timestamp'].apply(
                 lambda x: self.timestamp_to_frame(datetime.strptime(x, "%Y-%m-%d %H:%M:%S.%f"))
             )
-            self.track_hands_button.setEnabled(False)
+
+            # Low-pass filter the imported landmarks
+            self.landmarks_df = self.smooth_landmarks(self.landmarks_df)
+
+            # self.track_hands_button.setEnabled(False)
             self.update_table()
+            self.load_frame(self.current_frame_index)
             print(self.landmarks_df)
 
+    def low_pass_filter(self, data, cutoff=1, fs=30, order=4):
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        y = filtfilt(b, a, data, axis=0)
+        return y
+    
+    def smooth_landmarks(self, landmarks_df):
+        if landmarks_df is None or landmarks_df.empty:
+            return None
+            
+        smoothed_data = []
+        for landmark in range(21):
+            landmark_data = landmarks_df[landmarks_df['landmark_index'] == landmark].copy()
+            if not landmark_data.empty:
+                landmark_data['x'] = self.low_pass_filter(landmark_data['x'].values)
+                landmark_data['y'] = self.low_pass_filter(landmark_data['y'].values)
+                landmark_data['z'] = self.low_pass_filter(landmark_data['z'].values)
+                smoothed_data.append(landmark_data)
+        
+        return pd.concat(smoothed_data).sort_values(['Frame', 'landmark_index']).reset_index(drop=True)
 
     def toggle_editing(self):
         """Toggle between editing modes."""
