@@ -225,6 +225,16 @@ class HandTrackingApp(QMainWindow):
             QMessageBox.warning(self, "Warning", "Start frame must be less than end frame.")
             return
         
+        # Select specific landmarks to interpolate
+        landmark_indices, ok = QInputDialog.getText(self, "Landmark Indices", "Enter landmark indices to interpolate (comma-separated, leave empty for all):")
+        if not ok:
+            return
+        
+        if landmark_indices:
+            landmark_indices = [int(idx.strip()) for idx in landmark_indices.split(",")]
+        else:
+            landmark_indices = self.landmarks_df["landmark_index"].unique()
+
         # Get landmarks for start and end frames
         start_landmarks = self.get_landmarks_for_frame(start_frame)
         end_landmarks = self.get_landmarks_for_frame(end_frame)
@@ -241,21 +251,22 @@ class HandTrackingApp(QMainWindow):
             
             # Interpolate landmarks
             for _, start_row in start_landmarks.iterrows():
-                end_row = end_landmarks[end_landmarks["landmark_index"] == start_row["landmark_index"]]
-                
-                if not end_row.empty:
-                    # Interpolate X, Y, Z coordinates
-                    x = (1 - alpha) * start_row["x"] + alpha * end_row["x"].values[0]
-                    y = (1 - alpha) * start_row["y"] + alpha * end_row["y"].values[0]
-                    z = (1 - alpha) * start_row["z"] + alpha * end_row["z"].values[0]
+                if start_row["landmark_index"] in landmark_indices:
+                    end_row = end_landmarks[end_landmarks["landmark_index"] == start_row["landmark_index"]]
                     
-                    interpolated_landmarks.append({
-                        "Frame": frame_idx,
-                        "landmark_index": start_row["landmark_index"],
-                        "x": x,
-                        "y": y,
-                        "z": z
-                    })
+                    if not end_row.empty:
+                        # Interpolate X, Y, Z coordinates
+                        x = (1 - alpha) * start_row["x"] + alpha * end_row["x"].values[0]
+                        y = (1 - alpha) * start_row["y"] + alpha * end_row["y"].values[0]
+                        z = (1 - alpha) * start_row["z"] + alpha * end_row["z"].values[0]
+                        
+                        interpolated_landmarks.append({
+                            "Frame": frame_idx,
+                            "landmark_index": start_row["landmark_index"],
+                            "x": x,
+                            "y": y,
+                            "z": z
+                        })
 
         # Create DataFrame for interpolated landmarks
         interpolated_df = pd.DataFrame(interpolated_landmarks)
