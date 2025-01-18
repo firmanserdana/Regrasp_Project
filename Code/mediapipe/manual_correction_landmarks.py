@@ -279,9 +279,11 @@ class HandTrackingApp(QMainWindow):
         # Fill NaN values with interpolated values
         interpolated_df = interpolated_df.fillna(method='ffill').fillna(method='bfill')
 
-        # Change existing tracked landmarks to interpolated landmarks
-        mask = (self.landmarks_df["Frame"] >= start_frame) & (self.landmarks_df["Frame"] <= end_frame)
-        self.landmarks_df = self.landmarks_df[~mask]
+        # Update only the interpolated landmarks in the existing DataFrame
+        for idx in landmark_indices:
+            mask = (self.landmarks_df["Frame"] >= start_frame) & (self.landmarks_df["Frame"] <= end_frame) & (self.landmarks_df["landmark_index"] == idx)
+            self.landmarks_df = self.landmarks_df[~mask]
+        
         self.landmarks_df = pd.concat([self.landmarks_df, interpolated_df], ignore_index=True)
 
         self.update_table()
