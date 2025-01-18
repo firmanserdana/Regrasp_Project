@@ -1,0 +1,3 @@
+[submodule "Code/mediapipe/manual_correction_util/mediapipe_manual_correction"]
+	path = Code/mediapipe/manual_correction_util/mediapipe_manual_correction
+	url = git@github.com:firmanserdana/mediapipe_manual_correction.git
