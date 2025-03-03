@@ -125,10 +125,16 @@ for i, video_path in enumerate(video_paths):
         fps = cap.get(cv2.CAP_PROP_FPS)  # Get the original FPS from the video
 
         # Get file paths with incremented numbers
-        time_record = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        base_filename = os.path.join(output_dir, f'{time_record}_hand-tracking-output')
-        video_file = get_incremented_filename(base_filename, 'avi')
-        csv_file = get_incremented_filename(base_filename.replace('output', 'landmarks'), 'csv')
+        original_filename = os.path.splitext(os.path.basename(video_path))[0]
+        base_filename = os.path.join(output_dir, f'{original_filename}-tracked')
+        video_file = f"{base_filename}.avi"
+        csv_file = f"{base_filename}-landmarks.csv"
+        
+        # Handle file existence
+        if os.path.exists(video_file) or os.path.exists(csv_file):
+            time_suffix = datetime.now().strftime("%Y%m%d%H%M%S")
+            video_file = f"{base_filename}-{time_suffix}.avi"
+            csv_file = f"{base_filename}-landmarks-{time_suffix}.csv"
 
         # Define the codec and create a VideoWriter object to save the video
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
@@ -199,21 +205,33 @@ for i, video_path in enumerate(video_paths):
                 
                 # Display frame with landmarks
                 if landmarks:
-                    # Create hand landmarks object for drawing
-                    hand_landmark_proto = mp.solutions.hands.HandLandmark(21)
-                    connections = mp_hands.HAND_CONNECTIONS
+                    # Create a temporary landmark structure for drawing
+                    mp_landmark = mp_hands.HandLandmark  # Just reference the enum
                     
-                    # Draw landmarks directly on frame
+                    # Create a temporary landmark collection for drawing
+                    from mediapipe.framework.formats import landmark_pb2
+                    temp_landmarks = landmark_pb2.NormalizedLandmarkList()
                     for landmark_idx, x, y, z in landmarks:
-                        # Convert normalized coordinates to pixel coordinates
+                        landmark = temp_landmarks.landmark.add()
+                        landmark.x = x
+                        landmark.y = y
+                        landmark.z = z
+                        
+                        # Convert normalized coordinates to pixel coordinates for CSV
                         px = int(x * frame.shape[1])
                         py = int(y * frame.shape[0])
                         
-                        # Draw circle at landmark position
-                        cv2.circle(frame, (px, py), 5, (0, 255, 0), -1)
-                        
                         # Write to CSV
                         csv_writer.writerow([frame_idx, timestamp, landmark_idx, x, y, z])
+                    
+                    # Draw the landmarks and connections
+                    mp_drawing.draw_landmarks(
+                        frame,
+                        temp_landmarks,
+                        mp_hands.HAND_CONNECTIONS,
+                        mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=4),
+                        mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2)
+                    )
                 
                 # Write the frame to video
                 out.write(frame)
