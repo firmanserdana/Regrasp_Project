@@ -1,22 +1,18 @@
-# Documentation: Running xsens_windows and xsensimus_handler
+# Step by step regrasp
 
-This documentation provides instructions on how to run the `xsens_windows` and `xsensimus_handler` programs.
-
-## Prerequisites
-
-Before running the programs, make sure you have the following prerequisites installed on your system:
-
-- Windows operating system
-- Latest Matlab
-- Xsens IMU (Inertial Measurement Unit) device
-- Xsens MT Software Suite (latest version)
+## Characterization
+1. Run the matlab code by opening `interface_characterization_v2` app design file
+2. In the Save tab, ensure the filename and click record
+3. Go to Stimulation tab, and choose the way you want to stimulate the hand
+4. Open terminal and run mediapipe protocols (see Run Mediapipe)
+5. On the app designer, click stimulate button
 
 ## Running xsens_windows
 
 To run `xsens_windows`, follow these steps:
 
 1. Connect the Xsens IMU dongle or station to your computer, ensure one imu sensors are turned on
-2. Open the folder where `xsens_windows.m` exist, or in this case here `Regrasp_3rd_Matlab_Pilot/Control/Control_v2/xsens_windows.m`
+2. Open the folder where `xsens_windows.m` exist, or in this case here `Code/Control/Control v2/xsens_windows.m`
 3. Right click on the folder, and select open terminal (you can try using this step here https://johnwargo.com/posts/2024/launch-windows-terminal/)
 4. Then type this command in the terminal to open new minimal matlab instance to run the tcpserver for data streaming `matlab -nosplash -nodesktop -r "xsens_windows('0.0.0.0', '5000'); exit;"`
 5. Ensure the typing in the matlab command line shows `Server is waiting to be connected at '0.0.0.0:5000`
@@ -31,4 +27,34 @@ To run `xsensimus_handler`, follow these steps:
 4. Check if the tcp is connected in minimal matlab instance, it will say connected and print the imu data streamed.
 5. To catch the streamed imu data in the other matlab instance you are currently running or any gui you are going to use, use this function `[time_data, roll_data, pitch_data, yaw_data] = receiveData(tcp_client)`. Then you can use those data for plotting and/or stimulation purpose.
 
-That's it! Let me know if you have any issues.
+## Running mediapipe
+
+To run mediapipe
+
+1. Open terminal and change directory to repository `cd "C:\Users\m.ceradini\Desktop\Elena\Code Regrap\Rewire_Project"`
+2. Run this to initiate the mediapipe script `Code\mediapipe\run_mult_single.ps1`
+3. Enter the camera being used separated by space, notes: you can check the camera id first, because maybe for realsense, one of the id is for depth sensors
+4. Enter recording notes
+5. Push enter to start script, wait for the windows to appear
+6. Press Esc in each windows to stop recordings.
+7. All data will be inside Data folder
+
+## License
+
+This code is released under the [MIT License](LICENSE). Note that some
+subfolders bundle or depend on third-party vendor SDKs (e.g. Ripple Neuromed
+Xippmex/Xipppy) that are **not** covered by this license — see
+[NOTICE.md](NOTICE.md) for details.
+
+## Citing this code
+
+If you use this code, please cite it using the metadata in
+[CITATION.cff](CITATION.cff) (fill in author/ORCID details before archiving).
+Once archived on Zenodo, replace this section with the DOI badge, e.g.:
+
+```
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+```
+
+
+todo: https://stackoverflow.com/questions/76325975/how-to-make-the-hand-detection-of-mediapipe-work-on-hand-with-gloves to make sure the covered hand can still be detected

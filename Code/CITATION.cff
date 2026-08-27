@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Targeted nerve stimulation restores single-finger movements in a person with tetraplegia - Stimulation Control and Analysis"
+authors:
+  - family-names: "TODO"
+    given-names: "TODO"
+    affiliation: "TODO"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+license: MIT
+repository-code: "https://github.com/firmanserdana/Rewire_Project/tree/master/Code"
+date-released: "2026-08-27"
+keywords:
+  - targeted nerve stimulation
+  - tetraplegia
+  - hand tracking
+  - mediapipe
+  - neuroprosthetics
