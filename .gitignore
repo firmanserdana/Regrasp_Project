@@ -64,5 +64,7 @@ checkpoints/
 *.gif
 
 !Code/mediapipe/MediaPipe-Hands-21-landmarks-13.png
+!Code/mediapipe/manual_correction_util/mediapipe_manual_correction/*.png
+!Code/mediapipe/manual_correction_util/mediapipe_manual_correction/requirements.txt
 
 *.svg
