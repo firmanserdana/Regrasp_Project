@@ -52,4 +52,4 @@ If you use this code, please cite it using the metadata in
 [CITATION.cff](CITATION.cff). 
 
 or use this DOI:
-[![DOI](https://zenodo.org/badge/704537143.svg)](https://doi.org/10.5281/zenodo.22127039)
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.22127039.svg)](https://doi.org/10.5281/zenodo.22127039)
