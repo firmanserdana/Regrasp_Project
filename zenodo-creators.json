@@ -38,6 +38,81 @@
     {
         "person_or_org": {
             "type": "personal",
+            "family_name": "Righi",
+            "given_name": "G."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Spinal Unit, Careggi University Hospital, 50134 Florence, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Biondi",
+            "given_name": "M."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Hand Surgery and Reconstructive Microsurgery, Careggi University Hospital, 50134 Florence, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Romeni",
+            "given_name": "S."
+        },
+        "affiliations": [
+            {
+                "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Verardo",
+            "given_name": "C."
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Giannotto",
+            "given_name": "N."
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            },
+            {
+                "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Martens",
+            "given_name": "J."
+        },
+        "affiliations": [
+            {
+                "name": "Laboratory for Biomedical Microtechnology, Department of Microsystems Engineering – IMTEK, IMBIT // NeuroProbes, BrainLinks-BrainTools Center, University of Freiburg, 79110 Freiburg, Germany"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
             "family_name": "Serdana",
             "given_name": "F.I.",
             "identifiers": [
@@ -95,6 +170,54 @@
     {
         "person_or_org": {
             "type": "personal",
+            "family_name": "De Santis",
+            "given_name": "C."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Technical Health Professions and Rehabilitation – Functional Rehabilitation – Spinal Unit, Careggi University Hospital, 50134 Florence, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Antoniella",
+            "given_name": "L."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Technical Health Professions and Rehabilitation – Functional Rehabilitation – Spinal Unit, Careggi University Hospital, 50134 Florence, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Caramelli",
+            "given_name": "R."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Clinical Neurophysiology, Careggi University Hospital, 50134 Florence, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Čvančara",
+            "given_name": "P."
+        },
+        "affiliations": [
+            {
+                "name": "Laboratory for Biomedical Microtechnology, Department of Microsystems Engineering – IMTEK, IMBIT // NeuroProbes, BrainLinks-BrainTools Center, University of Freiburg, 79110 Freiburg, Germany"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
             "family_name": "Carpaneto",
             "given_name": "J.",
             "identifiers": [
@@ -107,6 +230,54 @@
         "affiliations": [
             {
                 "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Bigazzi",
+            "given_name": "P."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Hand Surgery and Reconstructive Microsurgery, Careggi University Hospital, 50134 Florence, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Stieglitz",
+            "given_name": "T."
+        },
+        "affiliations": [
+            {
+                "name": "Laboratory for Biomedical Microtechnology, Department of Microsystems Engineering – IMTEK, IMBIT // NeuroProbes, BrainLinks-BrainTools Center, University of Freiburg, 79110 Freiburg, Germany"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Del Popolo",
+            "given_name": "G."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Spinal Unit, Careggi University Hospital, 50134 Florence, Italy"
+            }
+        ]
+    },
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Pfanner",
+            "given_name": "S."
+        },
+        "affiliations": [
+            {
+                "name": "Department of Hand Surgery and Reconstructive Microsurgery, Careggi University Hospital, 50134 Florence, Italy"
             }
         ]
     },
