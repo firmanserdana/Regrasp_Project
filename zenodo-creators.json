@@ -1,97 +1,164 @@
 [
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Losanno",
-      "given_name": "E.",
-      "identifiers": [{ "scheme": "orcid", "identifier": "0000-0002-6234-375X" }]
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Losanno",
+            "given_name": "E.",
+            "identifiers": [
+                {
+                    "scheme": "orcid",
+                    "identifier": "0000-0002-6234-375X"
+                }
+            ]
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            },
+            {
+                "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy"
+            }
+        ]
     },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" },
-      { "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy" }
-    ]
-  },
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Agnesi",
-      "given_name": "F."
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Agnesi",
+            "given_name": "F."
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            },
+            {
+                "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy"
+            }
+        ]
     },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" },
-      { "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy" }
-    ]
-  },
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Serdana",
-      "given_name": "F.I.",
-      "identifiers": [{ "scheme": "orcid", "identifier": "0000-0002-9933-8671" }]
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Serdana",
+            "given_name": "F.I.",
+            "identifiers": [
+                {
+                    "scheme": "orcid",
+                    "identifier": "0000-0002-9933-8671"
+                }
+            ]
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            }
+        ]
     },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" }
-    ]
-  },
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Fossati",
-      "given_name": "V.",
-      "identifiers": [{ "scheme": "orcid", "identifier": "0009-0002-3815-5748" }]
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Fossati",
+            "given_name": "V.",
+            "identifiers": [
+                {
+                    "scheme": "orcid",
+                    "identifier": "0009-0002-3815-5748"
+                }
+            ]
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            },
+            {
+                "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy"
+            }
+        ]
     },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" },
-      { "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy" }
-    ]
-  },
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Ferroni",
-      "given_name": "R.",
-      "identifiers": [{ "scheme": "orcid", "identifier": "0009-0008-4857-1300" }]
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Ferroni",
+            "given_name": "R.",
+            "identifiers": [
+                {
+                    "scheme": "orcid",
+                    "identifier": "0009-0008-4857-1300"
+                }
+            ]
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            }
+        ]
     },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" }
-    ]
-  },
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Carpaneto",
-      "given_name": "J.",
-      "identifiers": [{ "scheme": "orcid", "identifier": "0000-0001-5256-5087" }]
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Carpaneto",
+            "given_name": "J.",
+            "identifiers": [
+                {
+                    "scheme": "orcid",
+                    "identifier": "0000-0001-5256-5087"
+                }
+            ]
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            }
+        ]
     },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" }
-    ]
-  },
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Shokur",
-      "given_name": "S.",
-      "identifiers": [{ "scheme": "orcid", "identifier": "0000-0003-2251-7142" }]
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Shokur",
+            "given_name": "S.",
+            "identifiers": [
+                {
+                    "scheme": "orcid",
+                    "identifier": "0000-0003-2251-7142"
+                }
+            ]
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            },
+            {
+                "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy"
+            },
+            {
+                "name": "Bertarelli Foundation Chair in Translational Neuroengineering, Neuro-X Institute, École Polytechnique Fédérale de Lausanne (EPFL), 1015 Lausanne, Switzerland"
+            },
+            {
+                "name": "MySpace Lab, Department of Clinical Neurosciences, University Hospital of Lausanne, University of Lausanne, 1015 Lausanne, Switzerland"
+            }
+        ]
     },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" },
-      { "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy" },
-      { "name": "Bertarelli Foundation Chair in Translational Neuroengineering, Neuro-X Institute, École Polytechnique Fédérale de Lausanne (EPFL), 1015 Lausanne, Switzerland" },
-      { "name": "MySpace Lab, Department of Clinical Neurosciences, University Hospital of Lausanne, University of Lausanne, 1015 Lausanne, Switzerland" }
-    ]
-  },
-  {
-    "person_or_org": {
-      "type": "personal",
-      "family_name": "Micera",
-      "given_name": "S.",
-      "identifiers": [{ "scheme": "orcid", "identifier": "0000-0003-4396-8217" }]
-    },
-    "affiliations": [
-      { "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy" },
-      { "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy" },
-      { "name": "Bertarelli Foundation Chair in Translational Neuroengineering, Neuro-X Institute, École Polytechnique Fédérale de Lausanne (EPFL), 1015 Lausanne, Switzerland" }
-    ]
-  }
+    {
+        "person_or_org": {
+            "type": "personal",
+            "family_name": "Micera",
+            "given_name": "S.",
+            "identifiers": [
+                {
+                    "scheme": "orcid",
+                    "identifier": "0000-0003-4396-8217"
+                }
+            ]
+        },
+        "affiliations": [
+            {
+                "name": "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy"
+            },
+            {
+                "name": "Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy"
+            },
+            {
+                "name": "Bertarelli Foundation Chair in Translational Neuroengineering, Neuro-X Institute, École Polytechnique Fédérale de Lausanne (EPFL), 1015 Lausanne, Switzerland"
+            }
+        ]
+    }
 ]
