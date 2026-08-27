@@ -49,12 +49,5 @@ Xippmex/Xipppy) that are **not** covered by this license — see
 ## Citing this code
 
 If you use this code, please cite it using the metadata in
-[CITATION.cff](CITATION.cff) (fill in author/ORCID details before archiving).
-Once archived on Zenodo, replace this section with the DOI badge, e.g.:
-
+[CITATION.cff](CITATION.cff).
 ```
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
-```
-
-
-todo: https://stackoverflow.com/questions/76325975/how-to-make-the-hand-detection-of-mediapipe-work-on-hand-with-gloves to make sure the covered hand can still be detected
