@@ -50,4 +50,3 @@ Xippmex/Xipppy) that are **not** covered by this license — see
 
 If you use this code, please cite it using the metadata in
 [CITATION.cff](CITATION.cff).
-```
