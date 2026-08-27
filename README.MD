@@ -31,7 +31,7 @@ To run `xsensimus_handler`, follow these steps:
 
 To run mediapipe
 
-1. Open terminal and change directory to repository `cd "C:\Users\m.ceradini\Desktop\Elena\Code Regrap\Rewire_Project"`
+1. Open terminal and change directory to repository `cd "C:\Users\m.ceradini\Desktop\Elena\Code Regrap\Regrasp_Project"`
 2. Run this to initiate the mediapipe script `Code\mediapipe\run_mult_single.ps1`
 3. Enter the camera being used separated by space, notes: you can check the camera id first, because maybe for realsense, one of the id is for depth sensors
 4. Enter recording notes

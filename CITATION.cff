@@ -28,7 +28,7 @@ authors:
     family-names: "Micera"
     affiliation: "The BioRobotics Institute, Health Science Interdisciplinary Research Center, and Department of Excellence Robotics and AI, Scuola Superiore Sant'Anna, 56127 Pisa, Italy; Modular Implantable Neuroprostheses (MINE) Lab, Università Vita-Salute San Raffaele & Scuola Superiore Sant'Anna, 20132 Milan, Italy; Bertarelli Foundation Chair in Translational Neuroengineering, Neuro-X Institute, École Polytechnique Fédérale de Lausanne (EPFL), 1015 Lausanne, Switzerland"
 license: MIT
-repository-code: "https://github.com/firmanserdana/Rewire_Project/tree/master/Code"
+repository-code: "https://github.com/firmanserdana/Regrasp_Project/tree/master/Code"
 date-released: "2026-08-27"
 keywords:
   - targeted nerve stimulation
